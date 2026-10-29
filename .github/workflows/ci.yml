@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+    paths: &code_paths
+      - "app/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - ".github/workflows/**"
+  pull_request:
+    paths: *code_paths
+
+# Only the newest run per branch matters; a new push cancels the old one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          enable-cache: true
+      # --locked fails if uv.lock is out of date with pyproject.toml.
+      - run: uv sync --locked
+      - name: Ruff
+        run: uv run ruff check --output-format=github
+      - name: actionlint
+        run: uv run actionlint
+
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: pytest
+        run: uv run pytest app
+      # Start the real server and check it answers. Startup primes the cache
+      # with one call each to /mapping, /latest, /1h and /5m (with our
+      # User-Agent); a wiki outage only marks data stale, it does not fail this.
+      - name: Launch smoke test
+        env:
+          CONTACT: github.com/${{ github.repository }}
+        run: |
+          uv run osrs_finance_hub serve --no-browser --contact "$CONTACT" > server.log 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/api/status > /dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/api/status
+          curl -fsS -o /dev/null http://127.0.0.1:8080/
+          curl -fsS -o /dev/null http://127.0.0.1:8080/static/app.js
+      - name: Server log
+        if: always()
+        run: cat server.log || true
