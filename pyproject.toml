@@ -1,0 +1,5 @@
+# Root of the uv workspace. This file is not a package itself (a "virtual"
+# workspace root); it only lists the member packages, which share one
+# lock file (uv.lock) and one virtual environment (.venv).
+[tool.uv.workspace]
+members = ["app"]
