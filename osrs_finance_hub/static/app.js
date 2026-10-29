@@ -1,4 +1,4 @@
-/* OSRS Flip Finder frontend.
+/* OSRS Finance Hub frontend.
  *
  * The backend hands us every item with its flip numbers already computed, so
  * all filtering, sorting and searching happens here, in memory, instantly.
@@ -886,7 +886,9 @@ async function loadMagic() {
  * Storage can be blocked or empty; the page works the same without it. */
 function restoreMagicSettings() {
   try {
-    const saved = JSON.parse(localStorage.getItem("flipfinder.magic") || "{}");
+    // Falls back to the key used when the app was called Flip Finder.
+    const saved = JSON.parse(localStorage.getItem("osrs_finance_hub.magic")
+      || localStorage.getItem("flipfinder.magic") || "{}");
     if (saved.level) document.getElementById("m-level").value = saved.level;
     if (saved.staff) document.getElementById("m-staff").value = saved.staff;
   } catch (err) { /* nothing saved, nothing lost */ }
@@ -894,7 +896,7 @@ function restoreMagicSettings() {
 
 function saveMagicSettings() {
   try {
-    localStorage.setItem("flipfinder.magic", JSON.stringify({
+    localStorage.setItem("osrs_finance_hub.magic", JSON.stringify({
       level: document.getElementById("m-level").value,
       staff: document.getElementById("m-staff").value,
     }));

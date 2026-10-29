@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-OSRS Flip Finder: a local FastAPI web app that reads the OSRS Wiki real-time prices API (`prices.runescape.wiki`) and ranks Grand Exchange flips. No database, no build step for the frontend. `README.md` is the detailed spec for the maths, UI behaviour and thresholds; read the relevant section before changing a feature.
+OSRS Finance Hub: a local FastAPI web app that reads the OSRS Wiki real-time prices API (`prices.runescape.wiki`) and ranks Grand Exchange flips. No database, no build step for the frontend. `README.md` is the detailed spec for the maths, UI behaviour and thresholds; read the relevant section before changing a feature.
 
 ## Commands
 
@@ -12,8 +12,8 @@ OSRS Flip Finder: a local FastAPI web app that reads the OSRS Wiki real-time pri
 python3 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"                     # app + pytest, pytest-asyncio
 
-flipfinder serve --contact "you@example.com" --no-browser   # http://127.0.0.1:8080/
-flipfinder serve --verbose                  # debug logging; API docs at /api/docs
+osrs_finance_hub serve --contact "you@example.com" --no-browser   # http://127.0.0.1:8080/
+osrs_finance_hub serve --verbose                  # debug logging; API docs at /api/docs
 
 pytest                                      # whole suite (asyncio_mode = auto)
 pytest tests/test_flips.py                  # one file
@@ -31,9 +31,9 @@ Data flows one way: wiki API → `PriceCache` (memory) → `flips.py` (pure math
 - **`flips.py`** – all business logic as pure functions with no I/O: GE tax (`ge_tax` and three constants), `build_flip`/`build_all_flips`, suggested prices, fill-time estimates, trade planner (`plan_flip`), trend/safety rating (`analyse_trend`), break-even search, live-trade valuation (`summarise_trade`, `advise_on_buying`), profit per hour, long-term dip test. Thresholds are named module-level constants grouped by section. Most tests live here.
 - **`sets.py` / `set_data.py`** – item set arbitrage (Sets tab, `/api/sets`). `build_set_flips` takes the per-item `Flip`s keyed by id and prices each set against its pieces both ways: unpack (buy set, sell pieces) and pack (buy pieces, sell set). `set_data.ITEM_SETS` is a static table of set → component ids taken from the wiki, because the prices API has no set data; add new sets there. `summarise_set_trade` values a pinned set trade (complete sets = the scarcest piece bought; unpack shares the set cost across pieces by their snapshotted prices).
 - **`magic.py` / `magic_data.py`** – alchemy and enchanting (Magic tab, `/api/magic`). `build_magic_opportunities` prices each spell on each item per item, with rune costs both with and without elemental runes (`_staff` fields); the frontend picks one. Units per 4h are capped by buy limit, volume and casting speed. Alchemy rows are pre-filtered to those that pay; every enchant is returned. `magic_data` is static wiki data (spells, rune ids, enchant recipes). `summarise_magic_trade` values a pinned spell (cost each = buy price + snapshotted runes; alch coins are banked as you cast, enchanted items sell in lots); `find_recipe` validates a spell/item pair.
-- **`positions.py`** – `PositionStore`: pinned items, their buy offers and sell lots, plus pinned set trades (`SetPosition`: buy legs and sell legs with lots, keyed by set id, routes under `/api/set-positions`), plus pinned spells (`MagicPosition`, keyed by `"spell:input_id"`, routes under `/api/magic-positions/{spell}/{input_id}`), persisted to `~/.flipfinder/positions.json` via write-temp-then-rename. Loading upgrades the older single-quantity format and treats a corrupt file as empty.
+- **`positions.py`** – `PositionStore`: pinned items, their buy offers and sell lots, plus pinned set trades (`SetPosition`: buy legs and sell legs with lots, keyed by set id, routes under `/api/set-positions`), plus pinned spells (`MagicPosition`, keyed by `"spell:input_id"`, routes under `/api/magic-positions/{spell}/{input_id}`), persisted to `~/.osrs_finance_hub/positions.json` via write-temp-then-rename (copied once from the pre-rename `~/.flipfinder/` on first start). Loading upgrades the older single-quantity format and treats a corrupt file as empty.
 - **`server.py`** – `create_app(settings)`; cache, settings and positions store live on `app.state`, created in the lifespan. Flips are recomputed from the cache per request (`cache.build_flips()`). GZip middleware (the `/api/flips` payload is ~4 MB), `Cache-Control: no-cache` on `/` and `/static/*`, static mount registered last so `/api/*` wins.
-- **`config.py`** – `Settings` dataclass; defaults ← `FLIPFINDER_*` env vars (`from_env`) ← CLI flags (`cli.py`). Add a new setting in all three places and in the README tables.
+- **`config.py`** – `Settings` dataclass; defaults ← `OSRS_FINANCE_HUB_*` env vars (`from_env`) ← CLI flags (`cli.py`). Add a new setting in all three places and in the README tables.
 - **`static/`** – vanilla JS single page (`index.html`, `app.js`, `style.css`); Chart.js from a CDN. Six views (home / scanner / quick / long / sets / magic) selected via the URL hash; home is the default and summarises the others by calling each tab's own filter function (`passesFilters`, `passesQuick`, `setRows`, `magicRows`), so keep those reusable. The scanner wires every `.filters` input and `thead th[data-sort]` globally, so other tables use their own sort attribute (the Sets table uses `data-set-sort`). `SAFETY_RANK` in `app.js` must match `SAFETY_ORDER` in `flips.py`.
 
 ## Constraints to preserve

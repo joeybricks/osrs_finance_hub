@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "flipfinder"
+name = "osrs_finance_hub"
 version = "0.1.0"
-description = "Local OSRS Grand Exchange flip finder using the OSRS Wiki real-time prices API"
+description = "Local OSRS Grand Exchange money-making hub using the OSRS Wiki real-time prices API"
 requires-python = ">=3.10"
 dependencies = [
     "fastapi>=0.110",
@@ -17,13 +17,13 @@ dependencies = [
 dev = ["pytest>=8", "pytest-asyncio>=0.23"]
 
 [project.scripts]
-flipfinder = "flipfinder.cli:main"
+osrs_finance_hub = "osrs_finance_hub.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["flipfinder*"]
+include = ["osrs_finance_hub*"]
 
 [tool.setuptools.package-data]
-flipfinder = ["static/*"]
+osrs_finance_hub = ["static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

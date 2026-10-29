@@ -1,4 +1,4 @@
-"""Command line entry point: `flipfinder serve`."""
+"""Command line entry point: `osrs_finance_hub serve`."""
 
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ from .server import create_app
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="flipfinder",
-        description="Local OSRS Grand Exchange flip finder.",
+        prog="osrs_finance_hub",
+        description="Local OSRS Grand Exchange money-making hub.",
     )
-    parser.add_argument("--version", action="version", version=f"flipfinder {__version__}")
+    parser.add_argument("--version", action="version", version=f"osrs_finance_hub {__version__}")
     sub = parser.add_subparsers(dest="command", required=True)
 
     serve = sub.add_parser("serve", help="run the web app and open it in your browser")
@@ -54,7 +54,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     serve.add_argument(
         "--positions-file",
-        help="where to keep pinned items (default ~/.flipfinder/positions.json)",
+        help="where to keep pinned items (default ~/.osrs_finance_hub/positions.json)",
     )
     serve.add_argument("--no-browser", action="store_true", help="do not open a browser")
     serve.add_argument("--verbose", action="store_true", help="debug logging")
@@ -99,13 +99,13 @@ def main(argv: list[str] | None = None) -> int:
     if not settings.contact:
         print(
             "WARNING: no contact configured. The OSRS Wiki asks every app to\n"
-            "identify itself with a way to get in touch. Set FLIPFINDER_CONTACT\n"
+            "identify itself with a way to get in touch. Set OSRS_FINANCE_HUB_CONTACT\n"
             "or pass --contact 'you@example.com' before using this for real.\n",
             file=sys.stderr,
         )
 
     url = f"http://{settings.host}:{settings.port}/"
-    print(f"flipfinder serving at {url}")
+    print(f"osrs_finance_hub serving at {url}")
     print(f"User-Agent: {settings.user_agent}")
 
     if settings.open_browser:

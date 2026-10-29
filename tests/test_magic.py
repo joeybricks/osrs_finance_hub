@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from flipfinder.flips import build_flip, ge_tax
-from flipfinder.magic import (
+from osrs_finance_hub.flips import build_flip, ge_tax
+from osrs_finance_hub.magic import (
     BOLTS,
     HIGH_ALCH,
     JEWELLERY,
@@ -12,7 +12,7 @@ from flipfinder.magic import (
     items_per_hour,
     rune_cost,
 )
-from flipfinder.magic_data import (
+from osrs_finance_hub.magic_data import (
     BOLT_ENCHANTS,
     ELEMENTAL_RUNES,
     JEWELLERY_ENCHANTS,

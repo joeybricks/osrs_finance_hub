@@ -14,6 +14,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shutil
 import tempfile
 import time
 import uuid
@@ -296,6 +297,24 @@ def _change_lot(
     if sold is not None and sold != lot.sold:
         lot.sold = sold
         lot.sold_at = time.time() if sold else None
+
+
+def adopt_legacy_file(path: Path, legacy: Path) -> bool:
+    """Copy the trades file from the app's old name, once.
+
+    Only when there is nothing at the new path yet, and only a copy: the old
+    file stays where it was as a backup. Returns whether a copy was made.
+    """
+    if path.exists() or not legacy.exists():
+        return False
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(legacy, path)
+    except OSError as exc:
+        log.warning("could not copy trades from %s to %s: %s", legacy, path, exc)
+        return False
+    log.info("copied trades from %s to %s; the old file is left as a backup", legacy, path)
+    return True
 
 
 class PositionStore:

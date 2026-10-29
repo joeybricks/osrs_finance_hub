@@ -21,7 +21,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from .cache import PriceCache
-from .config import Settings
+from .config import DEFAULT_POSITIONS_FILE, LEGACY_POSITIONS_FILE, Settings
 from .flips import (
     analyse_trend,
     assess_long_term,
@@ -37,7 +37,7 @@ from .magic import (
     rune_cost,
     summarise_magic_trade,
 )
-from .positions import PositionStore, magic_key
+from .positions import PositionStore, adopt_legacy_file, magic_key
 from .sets import PACK, UNPACK, build_set_flips, set_legs, summarise_set_trade
 from .wiki_api import VALID_TIMESTEPS, WikiApiError, WikiPricesClient
 
@@ -55,6 +55,8 @@ def create_app(settings: Settings) -> FastAPI:
         cache = PriceCache(client, settings)
         app.state.cache = cache
         app.state.settings = settings
+        if settings.positions_file == DEFAULT_POSITIONS_FILE:
+            adopt_legacy_file(settings.positions_file, LEGACY_POSITIONS_FILE)
         app.state.positions = PositionStore(settings.positions_file)
         log.info("User-Agent: %s", settings.user_agent)
         await cache.start()
@@ -64,7 +66,7 @@ def create_app(settings: Settings) -> FastAPI:
             await cache.stop()
             await client.aclose()
 
-    app = FastAPI(title="OSRS Flip Finder", lifespan=lifespan, docs_url="/api/docs")
+    app = FastAPI(title="OSRS Finance Hub", lifespan=lifespan, docs_url="/api/docs")
 
     # The scanner payload is a few megabytes of JSON and the page refetches it
     # every minute. Compressed it is under a tenth of that, which is the

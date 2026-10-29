@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 import logging
 
-from flipfinder.flips import build_flip, ge_tax
-from flipfinder.set_data import ITEM_SETS
-from flipfinder.sets import PACK, UNPACK, build_set_flips
+from osrs_finance_hub.flips import build_flip, ge_tax
+from osrs_finance_hub.set_data import ITEM_SETS
+from osrs_finance_hub.sets import PACK, UNPACK, build_set_flips
 
 NOW = 1_000_000
 FRACTION = 0.1
@@ -142,8 +142,8 @@ def test_set_table_is_well_formed():
 
 # --- live set trades ---------------------------------------------------------
 
-from flipfinder.flips import BUY_KEEP, BUY_STOP, BUY_THINNING, BUY_UNKNOWN  # noqa: E402
-from flipfinder.sets import set_legs, split_set_cost, summarise_set_trade  # noqa: E402
+from osrs_finance_hub.flips import BUY_KEEP, BUY_STOP, BUY_THINNING, BUY_UNKNOWN  # noqa: E402
+from osrs_finance_hub.sets import set_legs, split_set_cost, summarise_set_trade  # noqa: E402
 
 
 def buy(item_id, price, ordered, arrived):

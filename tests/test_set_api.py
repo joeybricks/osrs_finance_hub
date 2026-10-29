@@ -5,10 +5,10 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from flipfinder.config import Settings
-from flipfinder.flips import build_flip
-from flipfinder.positions import PositionStore
-from flipfinder.server import create_app
+from osrs_finance_hub.config import Settings
+from osrs_finance_hub.flips import build_flip
+from osrs_finance_hub.positions import PositionStore
+from osrs_finance_hub.server import create_app
 
 # Bronze set (lg) and its pieces, as listed in set_data.
 SET_ID = 12960

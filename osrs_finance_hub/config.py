@@ -1,7 +1,7 @@
 """Runtime settings.
 
 Everything tunable lives here. Values come from environment variables
-(prefixed FLIPFINDER_) and can be overridden by CLI flags.
+(prefixed OSRS_FINANCE_HUB_) and can be overridden by CLI flags.
 """
 
 from __future__ import annotations
@@ -12,7 +12,11 @@ from pathlib import Path
 
 from . import __version__
 
-APP_NAME = "osrs-flip-finder"
+APP_NAME = "osrs-finance-hub"
+
+DEFAULT_POSITIONS_FILE = Path.home() / ".osrs_finance_hub" / "positions.json"
+# Where trades lived when the app was called Flip Finder. Copied across once.
+LEGACY_POSITIONS_FILE = Path.home() / ".flipfinder" / "positions.json"
 
 
 @dataclass
@@ -50,7 +54,7 @@ class Settings:
 
     # Where the pinned items and open positions are kept. This is your own
     # record rather than cached API data, so it survives restarts.
-    positions_file: Path = Path.home() / ".flipfinder" / "positions.json"
+    positions_file: Path = DEFAULT_POSITIONS_FILE
 
     # Web server.
     host: str = "127.0.0.1"
@@ -59,25 +63,25 @@ class Settings:
 
     @classmethod
     def from_env(cls) -> "Settings":
-        """Build settings from FLIPFINDER_* environment variables."""
+        """Build settings from OSRS_FINANCE_HUB_* environment variables."""
         env = os.environ
         return cls(
-            contact=env.get("FLIPFINDER_CONTACT", ""),
-            latest_refresh_seconds=int(env.get("FLIPFINDER_LATEST_REFRESH", 60)),
-            hourly_refresh_seconds=int(env.get("FLIPFINDER_HOURLY_REFRESH", 300)),
-            timeseries_cache_seconds=int(env.get("FLIPFINDER_TIMESERIES_CACHE", 60)),
-            volume_fraction=float(env.get("FLIPFINDER_VOLUME_FRACTION", 0.10)),
-            aggression=float(env.get("FLIPFINDER_AGGRESSION", 0.25)),
-            min_profit_per_unit=int(env.get("FLIPFINDER_MIN_PROFIT_PER_UNIT", 1)),
-            trend_timestep=env.get("FLIPFINDER_TREND_TIMESTEP", "24h"),
-            trend_batch_size=int(env.get("FLIPFINDER_TREND_BATCH_SIZE", 25)),
+            contact=env.get("OSRS_FINANCE_HUB_CONTACT", ""),
+            latest_refresh_seconds=int(env.get("OSRS_FINANCE_HUB_LATEST_REFRESH", 60)),
+            hourly_refresh_seconds=int(env.get("OSRS_FINANCE_HUB_HOURLY_REFRESH", 300)),
+            timeseries_cache_seconds=int(env.get("OSRS_FINANCE_HUB_TIMESERIES_CACHE", 60)),
+            volume_fraction=float(env.get("OSRS_FINANCE_HUB_VOLUME_FRACTION", 0.10)),
+            aggression=float(env.get("OSRS_FINANCE_HUB_AGGRESSION", 0.25)),
+            min_profit_per_unit=int(env.get("OSRS_FINANCE_HUB_MIN_PROFIT_PER_UNIT", 1)),
+            trend_timestep=env.get("OSRS_FINANCE_HUB_TREND_TIMESTEP", "24h"),
+            trend_batch_size=int(env.get("OSRS_FINANCE_HUB_TREND_BATCH_SIZE", 25)),
             positions_file=Path(
-                env.get("FLIPFINDER_POSITIONS_FILE",
-                        Path.home() / ".flipfinder" / "positions.json")
+                env.get("OSRS_FINANCE_HUB_POSITIONS_FILE",
+                        Path.home() / ".osrs_finance_hub" / "positions.json")
             ).expanduser(),
-            host=env.get("FLIPFINDER_HOST", "127.0.0.1"),
-            port=int(env.get("FLIPFINDER_PORT", 8080)),
-            open_browser=env.get("FLIPFINDER_OPEN_BROWSER", "1") not in ("0", "false", "no"),
+            host=env.get("OSRS_FINANCE_HUB_HOST", "127.0.0.1"),
+            port=int(env.get("OSRS_FINANCE_HUB_PORT", 8080)),
+            open_browser=env.get("OSRS_FINANCE_HUB_OPEN_BROWSER", "1") not in ("0", "false", "no"),
         )
 
     @property

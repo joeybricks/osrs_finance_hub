@@ -1,4 +1,4 @@
-# OSRS Flip Finder
+# OSRS Finance Hub
 
 A local web app for finding Grand Exchange flips in Old School RuneScape. It
 reads live prices from the [OSRS Wiki real-time prices API][api], works out the
@@ -55,7 +55,7 @@ Requires Python 3.10 or newer.
 
 ```bash
 git clone <this repo>
-cd ge_tracker
+cd osrs_finance_hub
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e .
@@ -64,7 +64,7 @@ pip install -e .
 ## Run
 
 ```bash
-flipfinder serve --contact "you@example.com"
+osrs_finance_hub serve --contact "you@example.com"
 ```
 
 That starts the server on <http://127.0.0.1:8080/> and opens your browser. The
@@ -82,7 +82,7 @@ Useful flags:
 | `--min-profit-per-unit` | Floor a suggestion must clear after tax. Default 1. |
 | `--latest-refresh` | Seconds between price refreshes. Default 60. |
 | `--hourly-refresh` | Seconds between volume refreshes. Default 300. |
-| `--positions-file` | Where pinned trades are kept. Default `~/.flipfinder/positions.json`. |
+| `--positions-file` | Where pinned trades are kept. Default `~/.osrs_finance_hub/positions.json`. |
 | `--no-browser` | Do not open a browser tab. |
 | `--verbose` | Debug logging. |
 
@@ -92,21 +92,21 @@ Every flag has an environment variable, which the flag overrides:
 
 | Variable | Default | What it controls |
 | --- | --- | --- |
-| `FLIPFINDER_CONTACT` | unset | Your contact string in the User-Agent |
-| `FLIPFINDER_PORT` | `8080` | Port |
-| `FLIPFINDER_HOST` | `127.0.0.1` | Bind address |
-| `FLIPFINDER_VOLUME_FRACTION` | `0.10` | Share of 4h volume you expect to capture |
-| `FLIPFINDER_AGGRESSION` | `0.25` | Share of the post-tax margin conceded for a faster fill |
-| `FLIPFINDER_MIN_PROFIT_PER_UNIT` | `1` | Floor a suggestion must clear after tax |
-| `FLIPFINDER_TREND_TIMESTEP` | `24h` | History resolution behind the safety rating |
-| `FLIPFINDER_TREND_BATCH_SIZE` | `25` | Most rows rated in one press of the button |
-| `FLIPFINDER_POSITIONS_FILE` | `~/.flipfinder/positions.json` | Where pinned trades are kept |
-| `FLIPFINDER_LATEST_REFRESH` | `60` | Seconds between `/latest` refreshes |
-| `FLIPFINDER_HOURLY_REFRESH` | `300` | Seconds between `/1h` and `/5m` refreshes |
-| `FLIPFINDER_TIMESERIES_CACHE` | `60` | Seconds to cache one item's chart data |
-| `FLIPFINDER_OPEN_BROWSER` | `1` | Set to `0` to stop it opening a tab |
+| `OSRS_FINANCE_HUB_CONTACT` | unset | Your contact string in the User-Agent |
+| `OSRS_FINANCE_HUB_PORT` | `8080` | Port |
+| `OSRS_FINANCE_HUB_HOST` | `127.0.0.1` | Bind address |
+| `OSRS_FINANCE_HUB_VOLUME_FRACTION` | `0.10` | Share of 4h volume you expect to capture |
+| `OSRS_FINANCE_HUB_AGGRESSION` | `0.25` | Share of the post-tax margin conceded for a faster fill |
+| `OSRS_FINANCE_HUB_MIN_PROFIT_PER_UNIT` | `1` | Floor a suggestion must clear after tax |
+| `OSRS_FINANCE_HUB_TREND_TIMESTEP` | `24h` | History resolution behind the safety rating |
+| `OSRS_FINANCE_HUB_TREND_BATCH_SIZE` | `25` | Most rows rated in one press of the button |
+| `OSRS_FINANCE_HUB_POSITIONS_FILE` | `~/.osrs_finance_hub/positions.json` | Where pinned trades are kept |
+| `OSRS_FINANCE_HUB_LATEST_REFRESH` | `60` | Seconds between `/latest` refreshes |
+| `OSRS_FINANCE_HUB_HOURLY_REFRESH` | `300` | Seconds between `/1h` and `/5m` refreshes |
+| `OSRS_FINANCE_HUB_TIMESERIES_CACHE` | `60` | Seconds to cache one item's chart data |
+| `OSRS_FINANCE_HUB_OPEN_BROWSER` | `1` | Set to `0` to stop it opening a tab |
 
-The defaults live in `flipfinder/config.py`.
+The defaults live in `osrs_finance_hub/config.py`.
 
 ### The contact string
 
@@ -115,7 +115,7 @@ to get in touch, so they can reach you rather than silently block you if
 something goes wrong. The app sends:
 
 ```
-osrs-flip-finder/0.1.0 (contact: you@example.com)
+osrs-finance-hub/0.1.0 (contact: you@example.com)
 ```
 
 It runs without one and warns you on startup, but please set it. An email
@@ -156,7 +156,7 @@ net per unit = suggest sell - tax(suggest sell) - suggest buy
 Taking the thinner of the two hourly volumes matters: a flip needs both a seller
 to buy from and a buyer to sell to, so the quieter side is the real constraint.
 
-All of this lives in `flipfinder/flips.py`. The tax rules are three named
+All of this lives in `osrs_finance_hub/flips.py`. The tax rules are three named
 constants and one function, `ge_tax`, so if Jagex changes them you edit one
 place.
 
@@ -352,11 +352,16 @@ price, and the keep-buying advice compares today's profit per item with that.
 
 #### Where trades are stored
 
-In `~/.flipfinder/positions.json`, not in the browser. This is your own record of
+In `~/.osrs_finance_hub/positions.json`, not in the browser. This is your own record of
 real gold, so clearing site data should not lose it. The file is small, written
 whole on every change, and saved by writing a temporary file and renaming it, so
 an interrupted write cannot corrupt it. A file that cannot be read is reported
 and treated as empty rather than stopping the app.
+
+The app used to be called Flip Finder and kept this file in
+`~/.flipfinder/`. On first start under the new name, if there is no file at the
+new default path yet, the old one is copied across. The original is left where
+it was as a backup, and it is never copied again after that.
 
 Set trades and magic trades sit in the same file, beside the item trades. A
 file from before they existed simply has none, and a set or magic trade the app
@@ -400,7 +405,7 @@ underneath it. Coal, for example, currently rates Risky: down about 26% over the
 year, 54% off its peak, and sitting near its low.
 
 All the thresholds are named constants at the top of the trend section in
-`flipfinder/flips.py`.
+`osrs_finance_hub/flips.py`.
 
 The planner uses the same figure. When a trade would take long enough that the
 trend meaningfully eats the margin, over a fifth of it, it says so with the
@@ -521,7 +526,7 @@ items has a spiked spread. Click a row to see every item with the price, tax, vo
 and age behind the figures.
 
 Which sets exist and what they contain is not in the prices API. The list lives
-in `flipfinder/set_data.py`, taken from the wiki's
+in `osrs_finance_hub/set_data.py`, taken from the wiki's
 [Item set](https://oldschool.runescape.wiki/w/Item_set) page in October 2026.
 When Jagex adds a set, add a row there. A set whose items have vanished from the
 mapping is skipped with a warning in the log rather than breaking the page.
@@ -568,7 +573,7 @@ bury the few that pay. Every enchant is listed, with the ones that do not pay
 right now dimmed.
 
 Spell levels, runes, speeds, and which item enchants into which are not in
-the prices API. They live in `flipfinder/magic_data.py`, taken from the wiki's
+the prices API. They live in `osrs_finance_hub/magic_data.py`, taken from the wiki's
 spell pages in October 2026. Enchants whose input or output cannot be traded
 on the GE are left out.
 
@@ -698,7 +703,7 @@ instead of crashing when the API fails.
 ## Layout
 
 ```
-flipfinder/
+osrs_finance_hub/
   cli.py          command line entry point
   config.py       all tunable settings
   wiki_api.py     the API client, one method per endpoint
@@ -724,7 +729,7 @@ install [Tailscale](https://tailscale.com) on both devices and bind to the
 machine's Tailscale address:
 
 ```bash
-flipfinder serve --contact you@example.com --host 100.x.y.z
+osrs_finance_hub serve --contact you@example.com --host 100.x.y.z
 ```
 
 Binding to the Tailscale address rather than `0.0.0.0` means only your own

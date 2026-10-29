@@ -5,11 +5,11 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from flipfinder.config import Settings
-from flipfinder.flips import BUY_DONE, BUY_KEEP, BUY_STOP, BUY_THINNING, BUY_UNKNOWN, build_flip
-from flipfinder.magic import HIGH_ALCH, JEWELLERY, find_recipe, summarise_magic_trade
-from flipfinder.positions import PositionStore, STORE_VERSION
-from flipfinder.server import create_app
+from osrs_finance_hub.config import Settings
+from osrs_finance_hub.flips import BUY_DONE, BUY_KEEP, BUY_STOP, BUY_THINNING, BUY_UNKNOWN, build_flip
+from osrs_finance_hub.magic import HIGH_ALCH, JEWELLERY, find_recipe, summarise_magic_trade
+from osrs_finance_hub.positions import PositionStore, STORE_VERSION
+from osrs_finance_hub.server import create_app
 
 
 def lot(lot_id, quantity, price, sold=False):

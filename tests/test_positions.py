@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from flipfinder.positions import STORE_VERSION, Position, PositionStore, SellLot
+from osrs_finance_hub.positions import STORE_VERSION, Position, PositionStore, SellLot
 
 
 @pytest.fixture
@@ -247,7 +247,7 @@ def test_upgrading_writes_the_new_version_back(tmp_path):
 
 # --- set trades --------------------------------------------------------------
 
-from flipfinder.positions import SetPosition  # noqa: E402
+from osrs_finance_hub.positions import SetPosition  # noqa: E402
 
 
 def test_a_pinned_set_trade_survives_a_reload(store):
@@ -331,3 +331,24 @@ def test_set_position_round_trips_through_a_dict():
     original = SetPosition(set_id=10, direction="unpack", buys=[], sells=[],
                            reference_highs={1: 5})
     assert SetPosition.from_dict(json.loads(json.dumps(original.to_dict()))) == original
+
+
+# --- renamed app ---------------------------------------------------------------
+
+from osrs_finance_hub.positions import adopt_legacy_file  # noqa: E402
+
+
+def test_old_trades_file_is_copied_once_and_kept(tmp_path):
+    legacy = tmp_path / ".flipfinder" / "positions.json"
+    legacy.parent.mkdir()
+    legacy.write_text('{"version": 4, "positions": []}')
+    new = tmp_path / ".osrs_finance_hub" / "positions.json"
+
+    assert adopt_legacy_file(new, legacy) is True
+    assert new.read_text() == legacy.read_text()
+    assert legacy.exists()                       # the old file stays as a backup
+
+    new.write_text("changed")
+    assert adopt_legacy_file(new, legacy) is False   # never overwrites
+    assert new.read_text() == "changed"
+    assert adopt_legacy_file(tmp_path / "x.json", tmp_path / "missing.json") is False

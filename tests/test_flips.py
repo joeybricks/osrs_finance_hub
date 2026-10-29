@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from flipfinder.flips import (
+from osrs_finance_hub.flips import (
     GE_TAX_CAP_PER_ITEM,
     GE_TAX_FREE_BELOW,
     LONG_TERM_MIN_DRAWDOWN,
