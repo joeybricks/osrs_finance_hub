@@ -35,6 +35,3 @@ secrets/
 !*.tfvars.example
 crash.log
 crash.*.log
-
-# Session notes
-work_so_far/*
