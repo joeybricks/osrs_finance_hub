@@ -1,4 +1,6 @@
 # Both projects were created by hand in OSRS-8 and imported here (imports.tf).
+# osrs-llm was created with no parent and moved into the org afterwards, so
+# org policies (e.g. no service account keys, OSRS-12) cover both projects.
 
 resource "google_project" "infra" {
   name       = "osrs-infra"
@@ -16,6 +18,7 @@ resource "google_project" "infra" {
 resource "google_project" "llm" {
   name       = "osrs-llm"
   project_id = var.llm_project_id
+  org_id     = var.org_id
   # No billing_account on purpose: this project must never have billing. If
   # anyone links one, the next plan shows Terraform removing it.
 

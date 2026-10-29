@@ -17,7 +17,7 @@ variable "llm_project_id" {
 }
 
 variable "org_id" {
-  description = "Organization joeclayton-renga-org. osrs-infra sits in it; osrs-llm has no parent."
+  description = "Organization joeclayton-renga-org; parent of both projects."
   type        = string
   default     = "984053129458"
 }
