@@ -6,3 +6,6 @@ venv/
 .pytest_cache/
 build/
 dist/
+
+CLAUDE.md
+work_so_far/*
