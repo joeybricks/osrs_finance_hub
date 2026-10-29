@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OSRS Flip Finder</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="header-row">
+      <h1>OSRS Flip Finder</h1>
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Search any item&hellip;" autocomplete="off">
+        <ul id="search-results" class="search-results" hidden></ul>
+      </div>
+    </div>
+    <div id="banner" class="banner" hidden></div>
+    <div id="meta" class="meta">Loading item data&hellip;</div>
+    <nav class="tabs" id="tabs">
+      <button data-view="home" class="tab-active">Home</button>
+      <button data-view="scanner">Scanner</button>
+      <button data-view="quick">Quick flips</button>
+      <button data-view="long">Long term</button>
+      <button data-view="sets">Sets</button>
+      <button data-view="magic">Magic</button>
+    </nav>
+  </header>
+
+  <main>
+    <section id="pinned" class="pinned" hidden>
+      <div class="pinned-head">
+        <h2>Live trades</h2>
+        <span id="pinned-summary" class="pinned-summary"></span>
+      </div>
+      <div id="pinned-body"></div>
+    </section>
+
+    <section id="view-home" class="view">
+      <div class="view-intro">
+        <h2>Best right now</h2>
+        <p>The top few from every tab, each using that tab's current filters,
+        so tightening a filter there tightens it here too. Click a row for the
+        item, or a heading for the full list.</p>
+      </div>
+      <div id="home-grid" class="home-grid"></div>
+    </section>
+
+    <section id="view-scanner" class="view" hidden>
+    <section id="filters" class="filters">
+      <label>Min volume each side
+        <input id="f-min-volume" type="number" min="0" step="10" value="50">
+      </label>
+      <label>Max price age (min)
+        <input id="f-max-age" type="number" min="1" step="1" value="10">
+      </label>
+      <label>Max capital (gp)
+        <input id="f-max-capital" type="number" min="0" step="100000" placeholder="no limit">
+      </label>
+      <label>Max flip time (h)
+        <input id="f-max-hours" type="number" min="0" step="1" value="4" placeholder="no limit">
+      </label>
+      <label>Min margin (gp)
+        <input id="f-min-margin" type="number" step="1" value="1">
+      </label>
+      <label>Min ROI (%)
+        <input id="f-min-roi" type="number" step="0.1" value="0">
+      </label>
+      <label>Membership
+        <select id="f-members">
+          <option value="all">All items</option>
+          <option value="members">Members only</option>
+          <option value="f2p">F2P only</option>
+        </select>
+      </label>
+      <label>Safety
+        <select id="f-safety">
+          <option value="all">Show all</option>
+          <option value="hide-risky">Hide rated risky or worse</option>
+        </select>
+      </label>
+      <label>Wide spreads
+        <select id="f-spread">
+          <option value="hide">Hide suspicious</option>
+          <option value="flag">Flag but show</option>
+          <option value="ignore">Ignore check</option>
+        </select>
+      </label>
+      <button id="load-safety" type="button" title="Fetches price history for the top rows. Costs one request per item, so it is not automatic.">Rate safety</button>
+      <button id="reset-filters" type="button">Reset</button>
+    </section>
+
+    <div id="result-count" class="result-count"></div>
+
+    <div class="table-wrap">
+      <table id="flip-table">
+        <thead>
+          <tr>
+            <th class="col-pin" title="Pin a trade to keep it in sight"></th>
+            <th data-sort="name" class="col-item">Item</th>
+            <th data-sort="low">Buy</th>
+            <th data-sort="high">Sell</th>
+            <th data-sort="suggested_buy" class="col-suggest">Suggested buy &rarr; sell</th>
+            <th data-sort="suggested_net_per_unit">Net/unit</th>
+            <th data-sort="margin">Margin</th>
+            <th data-sort="roi">ROI</th>
+            <th data-sort="hour_low_volume">Vol buy/sell</th>
+            <th data-sort="limit">Limit</th>
+            <th data-sort="est_profit_per_4h" class="sorted-desc">Profit/4h</th>
+            <th data-sort="capital_required">Capital</th>
+            <th data-sort="est_hours_total">Flip time</th>
+            <th data-sort="safety_rank">Safety</th>
+            <th data-sort="price_age_seconds">Age</th>
+          </tr>
+        </thead>
+        <tbody id="flip-body"></tbody>
+      </table>
+    </div>
+    </section>
+
+    <section id="view-quick" class="view" hidden>
+      <div class="view-intro">
+        <h2>Quick flips</h2>
+        <p>Ranked by profit per hour rather than per window, so the top of this
+        list is where your gold works hardest. The buy limit still caps how much
+        you can buy in four hours, so a fast flip frees your capital sooner
+        rather than multiplying it.</p>
+      </div>
+      <section class="filters">
+        <label>Max round trip (h)
+          <input id="q-max-hours" type="number" min="0.1" step="0.5" value="1">
+        </label>
+        <label>Min volume each side
+          <input id="q-min-volume" type="number" min="0" step="100" value="500">
+        </label>
+        <label>Max capital (gp)
+          <input id="q-max-capital" type="number" min="0" step="100000" placeholder="no limit">
+        </label>
+        <label>Min profit/hour
+          <input id="q-min-per-hour" type="number" min="0" step="1000" value="0">
+        </label>
+        <label>Membership
+          <select id="q-members">
+            <option value="all">All items</option>
+            <option value="members">Members only</option>
+            <option value="f2p">F2P only</option>
+          </select>
+        </label>
+        <button id="q-reset" type="button">Reset</button>
+      </section>
+      <div id="q-count" class="result-count"></div>
+      <div class="table-wrap">
+        <table id="quick-table">
+          <thead>
+            <tr>
+              <th class="col-pin"></th>
+              <th class="col-item">Item</th>
+              <th>Buy</th><th>Sell</th>
+              <th>Suggested buy &rarr; sell</th>
+              <th>Net/unit</th>
+              <th>Profit/hour</th>
+              <th>Round trip</th>
+              <th>Profit/4h</th>
+              <th>Capital</th>
+              <th>Vol buy/sell</th>
+              <th>Age</th>
+            </tr>
+          </thead>
+          <tbody id="quick-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-long" class="view" hidden>
+      <div class="view-intro">
+        <h2>Long term</h2>
+        <p>Items whose price has been climbing for months but has pulled back
+        from its peak, so you are buying a dip in an uptrend rather than the top
+        of a rise. They must still show a spread, so the position is worth
+        holding either way.</p>
+        <p class="caveat">Price history has no bulk endpoint, so this cannot
+        scan all 4,663 items. It shortlists the best candidates from the data
+        already in memory, then fetches history for a capped batch. Press the
+        button to run it.</p>
+      </div>
+      <section class="filters">
+        <label>Min margin (gp)
+          <input id="l-min-margin" type="number" min="0" step="1" value="1">
+        </label>
+        <label>Min volume each side
+          <input id="l-min-volume" type="number" min="0" step="50" value="100">
+        </label>
+        <label>Max capital (gp)
+          <input id="l-max-capital" type="number" min="0" step="100000" placeholder="no limit">
+        </label>
+        <label>Candidates to check
+          <input id="l-batch" type="number" min="1" max="50" step="1" value="25">
+        </label>
+        <label>Show
+          <select id="l-show">
+            <option value="qualifying">Only rising dips</option>
+            <option value="all">Everything checked</option>
+          </select>
+        </label>
+        <button id="l-scan" type="button">Scan for candidates</button>
+      </section>
+      <div id="l-count" class="result-count">Not scanned yet.</div>
+      <div id="long-body"></div>
+    </section>
+
+    <section id="view-sets" class="view" hidden>
+      <div class="view-intro">
+        <h2>Item sets</h2>
+        <p>A Grand Exchange clerk swaps a set for its pieces, or the pieces for
+        the set, for free. When the market prices the two differently you can
+        trade the gap. <b>Unpack</b> buys the set and sells each piece.
+        <b>Pack</b> buys every piece and sells the set. Each piece pays its own
+        tax. Click a row to see the pieces.</p>
+        <p class="caveat">Profit assumes patient offers: buying at the
+        instant-sell price and selling at the instant-buy price, with every
+        offer filling. <b>Instant</b> is what crossing the spread on every item
+        pays right now. It is usually negative, and when it is positive the gap
+        is there for the taking. Sets trade thinly, so check the age. Every set is listed; the ones that
+        would not make money right now are dimmed.</p>
+      </div>
+      <section class="filters">
+        <label>Direction
+          <select id="s-direction">
+            <option value="best">Better of the two</option>
+            <option value="unpack">Unpack: buy set, sell pieces</option>
+            <option value="pack">Pack: buy pieces, sell set</option>
+          </select>
+        </label>
+        <label>Category
+          <select id="s-category"><option value="all">All sets</option></select>
+        </label>
+        <label>Min profit per set (gp)
+          <input id="s-min-profit" type="number" step="100" placeholder="any">
+        </label>
+        <label>Min sets per 4h
+          <input id="s-min-units" type="number" min="0" step="1" placeholder="any">
+        </label>
+        <label>Max capital (gp)
+          <input id="s-max-capital" type="number" min="0" step="100000" placeholder="no limit">
+        </label>
+        <label>Max price age (min)
+          <input id="s-max-age" type="number" min="1" step="5" placeholder="no limit">
+        </label>
+        <label>Membership
+          <select id="s-members">
+            <option value="all">All sets</option>
+            <option value="members">Members only</option>
+            <option value="f2p">F2P only</option>
+          </select>
+        </label>
+        <label>Wide spreads
+          <select id="s-spread">
+            <option value="flag">Flag but show</option>
+            <option value="hide">Hide suspicious</option>
+            <option value="ignore">Ignore check</option>
+          </select>
+        </label>
+        <button id="s-reset" type="button">Reset</button>
+      </section>
+      <div id="s-count" class="result-count">Loading sets&hellip;</div>
+      <div class="table-wrap">
+        <table id="sets-table">
+          <thead>
+            <tr>
+              <th class="col-pin" title="Pin a set trade to log it under Live trades"></th>
+              <th data-set-sort="name" class="col-item">Set</th>
+              <th data-set-sort="direction">Direction</th>
+              <th data-set-sort="cost" title="What you pay for one set's worth, at patient buy prices">Buy for</th>
+              <th data-set-sort="proceeds" title="What one set's worth sells for at patient prices, after tax">Sell for</th>
+              <th data-set-sort="profit">Profit/set</th>
+              <th data-set-sort="roi">ROI</th>
+              <th data-set-sort="instant_profit" title="Profit per set if you crossed the spread on every item right now">Instant</th>
+              <th data-set-sort="est_units_per_4h">Sets/4h</th>
+              <th data-set-sort="est_profit_per_4h" class="sorted-desc">Profit/4h</th>
+              <th data-set-sort="capital_required">Capital</th>
+              <th data-set-sort="est_hours_total">Flip time</th>
+              <th data-set-sort="bottleneck" class="col-left" title="What caps how many sets you can trade in four hours">Bottleneck</th>
+              <th data-set-sort="price_age_seconds" title="Age of the stalest price involved">Age</th>
+            </tr>
+          </thead>
+          <tbody id="sets-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="view-magic" class="view" hidden>
+      <div class="view-intro">
+        <h2>Magic</h2>
+        <p>Buy an item and cast on it. <b>Alchemy</b> turns it into coins, which
+        pay no GE tax. <b>Enchanting</b> turns it into something worth more,
+        which you then sell. Profit is per item, after the runes and any tax.
+        Alchemy only lists items that can pay; every enchant is listed, with
+        the ones that would not make money right now dimmed.</p>
+        <p class="caveat">Items per 4h is capped three ways: the buy limit, your
+        share of the volume, and how many casts fit in four hours. Bolt spells
+        enchant ten bolts a cast. Elemental runes count as free by default,
+        since a staff or tome supplies them; switch that off if you buy them.</p>
+      </div>
+      <section class="filters">
+        <label>Your Magic level
+          <input id="m-level" type="number" min="1" max="99" step="1" placeholder="any">
+        </label>
+        <label>Method
+          <select id="m-kind">
+            <option value="all">Everything</option>
+            <option value="high_alch">High Alchemy</option>
+            <option value="low_alch">Low Alchemy</option>
+            <option value="jewellery">Enchant jewellery</option>
+            <option value="bolts">Enchant bolts</option>
+          </select>
+        </label>
+        <label>Elemental runes
+          <select id="m-staff">
+            <option value="staff">Free (staff or tome)</option>
+            <option value="buy">Bought on the GE</option>
+          </select>
+        </label>
+        <label>Min profit per item (gp)
+          <input id="m-min-profit" type="number" step="10" placeholder="any">
+        </label>
+        <label>Min items per 4h
+          <input id="m-min-units" type="number" min="0" step="10" placeholder="any">
+        </label>
+        <label>Max capital (gp)
+          <input id="m-max-capital" type="number" min="0" step="100000" placeholder="no limit">
+        </label>
+        <label>Max price age (min)
+          <input id="m-max-age" type="number" min="1" step="5" placeholder="no limit">
+        </label>
+        <label>Membership
+          <select id="m-members">
+            <option value="all">All</option>
+            <option value="members">Members only</option>
+            <option value="f2p">F2P only</option>
+          </select>
+        </label>
+        <label>Wide spreads
+          <select id="m-spread">
+            <option value="flag">Flag but show</option>
+            <option value="hide">Hide suspicious</option>
+            <option value="ignore">Ignore check</option>
+          </select>
+        </label>
+        <button id="m-reset" type="button">Reset</button>
+      </section>
+      <div id="m-count" class="result-count">Loading&hellip;</div>
+      <div class="table-wrap">
+        <table id="magic-table">
+          <thead>
+            <tr>
+              <th class="col-pin" title="Pin a spell to log it under Live trades"></th>
+              <th data-magic-sort="input_name" class="col-item">Item</th>
+              <th data-magic-sort="level" class="col-left">Spell</th>
+              <th data-magic-sort="output_name" class="col-left">Makes</th>
+              <th data-magic-sort="input_low" title="Patient buy price for the item">Buy</th>
+              <th data-magic-sort="proceeds" title="Alch value, or the patient sell price of what it makes after tax">Get</th>
+              <th data-magic-sort="runes" title="Rune cost per item">Runes</th>
+              <th data-magic-sort="profit">Profit each</th>
+              <th data-magic-sort="instant" title="Profit each if you bought and sold at the instant prices">Instant</th>
+              <th data-magic-sort="est_units_per_4h">Items/4h</th>
+              <th data-magic-sort="per_4h" class="sorted-desc">Profit/4h</th>
+              <th data-magic-sort="per_hour" title="What an hour of casting earns while you have stock">GP/h casting</th>
+              <th data-magic-sort="xp_per_hour" title="Magic experience an hour of casting gives">XP/h</th>
+              <th data-magic-sort="capital_required">Capital</th>
+              <th data-magic-sort="bottleneck" class="col-left" title="What caps how many you can do in four hours">Bottleneck</th>
+              <th data-magic-sort="price_age_seconds">Age</th>
+            </tr>
+          </thead>
+          <tbody id="magic-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div id="detail" class="detail-overlay" hidden>
+    <div class="detail-panel">
+      <button id="detail-close" class="detail-close" type="button" aria-label="Close">&times;</button>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flipfinder"
+version = "0.1.0"
+description = "Local OSRS Grand Exchange flip finder using the OSRS Wiki real-time prices API"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
+    "httpx>=0.26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+
+[project.scripts]
+flipfinder = "flipfinder.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["flipfinder*"]
+
+[tool.setuptools.package-data]
+flipfinder = ["static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
