@@ -83,7 +83,8 @@ Notes are written for Claude to resume from and for Joe to revise from. Keep the
 - **Secrets**: repo is public. No keys in code, config, logs or notes. Secrets go in Secret Manager. Auth to GCP via Workload Identity Federation only, no service account key files.
 - **Infra changes** go through Terraform and CI, not click-ops. Run `terraform plan` and show the output before any apply.
 - **Data and LLM**: deterministic entity linking comes before any LLM call. Prompts are versioned in `prompts/`. Changes to prompts or extraction need an eval run.
-- Pin GitHub Actions to SHAs. Tests (pytest) and lint must pass before merge.
+- Pin GitHub Actions to SHAs (the repo requires it). Third-party actions must be on the repo's Actions allowlist (Settings → Actions → General) before a workflow can use them; otherwise the run fails with `startup_failure` and no logs.
+- `master` and `develop` are protected by the `protect-master` ruleset: PR only, no force push or deletion, linear history, and `lint`, `test`, `gitleaks` must pass. Secret scanning with push protection, Dependabot alerts and security updates are on; the default workflow token is read-only.
 
 ## Tickets and decisions
 - Joe assigns work as tickets. Work through the assigned ticket; don't pick up other stories or epics unprompted.
@@ -139,13 +140,13 @@ Why this change exists and which problem or ticket it addresses.
 
 ## GitHub Actions guardrails
 
-Private repo: 2,000 free min/month; at the $0 spending limit, jobs stop rather than bill. Runaway workflows are the main risk, so every workflow must follow these rules:
+Public repo: standard GitHub-hosted runners are free and unmetered. Larger runners still bill, and the $0 spending limit stays on as a backstop. Runaway workflows are still the main risk (noise, queueing, and minutes if the repo ever goes private), so every workflow must follow these rules:
 
 | Rule | Why |
 |---|---|
 | `timeout-minutes` on every job (≤10 unless justified) | Default is 6 h; one hung job can burn 360 min |
 | `concurrency` with `cancel-in-progress: true` (false for `tf-apply`) | Rapid pushes only run the latest commit; applies queue, never abort |
-| `paths:` filters on CI and evals | Skip runs when irrelevant files change |
+| `paths:` filters on CI and evals | Skip runs when irrelevant files change. For workflows whose jobs are **required checks**, filter inside the workflow (a `changes` job + `if:`), not on the `pull_request` trigger: a workflow that never starts never reports, so the PR can't merge. Skipped jobs count as passing. |
 | `@claude` triggers only on explicit mentions, with a job timeout | App tokens can trigger other workflows, so loops are possible |
 | No new `schedule:` crons without approval | Frequent crons are the fastest way to exhaust minutes |
 | Prefer `GITHUB_TOKEN` over PATs for commits | Commits made with it don't trigger further workflows |
