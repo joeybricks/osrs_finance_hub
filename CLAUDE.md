@@ -91,6 +91,7 @@ Notes are written for Claude to resume from and for Joe to revise from. Keep the
 - Keep changes small and one epic story at a time. Ask before expanding scope.
 - If something contradicts the epic plan or an ADR, say so rather than silently deviating.
 - Commit sensibly and frequently: one logical change per commit with a clear message, but don't over-commit (no commits for trivial edits or half-finished work).
+- Whilst working, stop and talk about features, tools and services that are being used so I can research them during the process
 
 # Working with Claude on Jira Tickets
 
