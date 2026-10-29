@@ -1,6 +1,6 @@
 variable "infra_project_id" {
   description = "Project with billing: state bucket and app infrastructure."
-  type        = string
+  type = string
   default     = "osrs-infra"
 }
 
