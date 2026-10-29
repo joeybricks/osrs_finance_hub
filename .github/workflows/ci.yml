@@ -3,15 +3,17 @@ name: CI
 on:
   push:
     branches: [develop, master]
-    paths: &code_paths
+    paths:
       - "app/**"
       - "src/**"
       - "pyproject.toml"
       - "uv.lock"
       - ".python-version"
       - ".github/workflows/**"
+  # No paths filter on PRs: lint and test are required checks, and a workflow
+  # that never starts never reports, which blocks the PR forever. The
+  # `changes` job does the filtering instead; skipped jobs count as passing.
   pull_request:
-    paths: *code_paths
 
 # Only the newest run per branch matters; a new push cancels the old one.
 concurrency:
@@ -22,7 +24,35 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 2  # PRs check out a merge commit; HEAD^1 is the base
+      - id: diff
+        name: Did code change?
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          # Pushes are already filtered by `paths:` above.
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          files=$(git diff --name-only HEAD^1 HEAD)
+          echo "$files"
+          if echo "$files" | grep -qE '^(app/|src/|pyproject\.toml$|uv\.lock$|\.python-version$|\.github/workflows/)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   lint:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -38,6 +68,8 @@ jobs:
         run: uv run actionlint
 
   test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
