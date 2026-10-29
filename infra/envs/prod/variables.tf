@@ -9,3 +9,15 @@ variable "region" {
   type        = string
   default     = "us-central1"
 }
+
+variable "llm_project_id" {
+  description = "Project with no billing account, for free-tier LLM work."
+  type        = string
+  default     = "osrs-llm"
+}
+
+variable "org_id" {
+  description = "Organization joeclayton-renga-org. osrs-infra sits in it; osrs-llm has no parent."
+  type        = string
+  default     = "984053129458"
+}
