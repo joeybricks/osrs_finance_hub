@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 
 import pytest
-
 from osrs_finance_hub.positions import STORE_VERSION, Position, PositionStore, SellLot
 
 
@@ -135,7 +134,7 @@ def test_lots_are_added_with_their_own_ids(store):
     first = store.add_lot(4151, quantity=200, price=130)
     second = store.add_lot(4151, quantity=300, price=135)
     assert first.lot_id != second.lot_id
-    assert [l.quantity for l in store.get(4151).lots] == [200, 300]
+    assert [lot.quantity for lot in store.get(4151).lots] == [200, 300]
 
 
 def test_adding_a_lot_to_nothing_pinned_returns_none(store):
@@ -189,7 +188,7 @@ def test_lots_survive_a_reload(store):
     reopened = PositionStore(store.path)
     lots = reopened.get(4151).lots
     assert len(lots) == 2
-    assert [l.sold for l in lots] == [False, True]
+    assert [lot.sold for lot in lots] == [False, True]
     assert lots[1].sold_at is not None
 
 
@@ -258,7 +257,7 @@ def test_a_pinned_set_trade_survives_a_reload(store):
 
     reopened = PositionStore(store.path).get_set(10)
     assert reopened.direction == "pack"
-    assert [l.item_id for l in reopened.buys] == [1, 2, 3]
+    assert [leg.item_id for leg in reopened.buys] == [1, 2, 3]
     leg = reopened.buy_leg(1)
     assert (leg.buy_price, leg.buy_quantity, leg.bought) == (100, 5, 2)
     assert reopened.reference_highs == {1: 120, 2: 220, 3: 320, 10: 700}

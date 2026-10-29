@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import asdict, dataclass, fields
-from typing import Any, Optional
+from typing import Any
 
 from .flips import (
     BUY_UNKNOWN,
@@ -48,17 +48,17 @@ class SetPiece:
     id: int
     name: str
     icon: str
-    low: Optional[int]
-    high: Optional[int]
-    tax: Optional[int]       # tax on one sold at `high`
-    limit: Optional[int]
+    low: int | None
+    high: int | None
+    tax: int | None       # tax on one sold at `high`
+    limit: int | None
     hour_low_volume: int     # instant-sells: what fills a buy offer
     hour_high_volume: int    # instant-buys: what fills a sell offer
-    price_age_seconds: Optional[int]
+    price_age_seconds: int | None
     suspicious_spread: bool
 
     @classmethod
-    def from_flip(cls, flip: Flip) -> "SetPiece":
+    def from_flip(cls, flip: Flip) -> SetPiece:
         return cls(
             id=flip.id,
             name=flip.name,
@@ -81,27 +81,27 @@ class SetTrade:
     direction: str                  # UNPACK or PACK
 
     # Per set, at the patient prices: buy at low, sell at high.
-    cost: Optional[int]
-    proceeds: Optional[int]         # after tax
-    tax: Optional[int]
-    profit: Optional[int]
-    roi: Optional[float]
+    cost: int | None
+    proceeds: int | None         # after tax
+    tax: int | None
+    profit: int | None
+    roi: float | None
 
     # Per set, crossing the spread on both sides right now: buy at high, sell
     # at low. Usually negative. When it is positive the gap is wide enough to
     # take without waiting in any queue.
-    instant_profit: Optional[int]
+    instant_profit: int | None
 
-    est_units_per_4h: Optional[int]
-    est_profit_per_4h: Optional[int]
-    capital_required: Optional[int]
-    est_hours_to_buy: Optional[float]
-    est_hours_to_sell: Optional[float]
-    est_hours_total: Optional[float]
-    est_profit_per_hour: Optional[int]
+    est_units_per_4h: int | None
+    est_profit_per_4h: int | None
+    capital_required: int | None
+    est_hours_to_buy: float | None
+    est_hours_to_sell: float | None
+    est_hours_total: float | None
+    est_profit_per_hour: int | None
 
     # What caps the unit count: "buy limit" or the item whose volume is thinnest.
-    bottleneck: Optional[str]
+    bottleneck: str | None
 
 
 @dataclass
@@ -117,7 +117,7 @@ class SetFlip:
     pieces: list[SetPiece]
     unpack: SetTrade
     pack: SetTrade
-    price_age_seconds: Optional[int]   # the stalest price involved
+    price_age_seconds: int | None   # the stalest price involved
     suspicious_spread: bool            # any item involved looks spiked
 
     def best(self) -> SetTrade:
@@ -134,7 +134,7 @@ class SetFlip:
         return out
 
 
-def set_legs(set_id: int, direction: str, item_sets=ITEM_SETS) -> Optional[tuple[list[int], list[int]]]:
+def set_legs(set_id: int, direction: str, item_sets=ITEM_SETS) -> tuple[list[int], list[int]] | None:
     """(ids you buy, ids you sell) for a set trade, or None for an unknown set."""
     for _, (sid, _), components in item_sets:
         if sid == set_id:
@@ -153,7 +153,7 @@ def _empty_trade(direction: str) -> SetTrade:
 
 
 def _units_and_bottleneck(
-    limit: Optional[int],
+    limit: int | None,
     flows: list[tuple[str, int]],
     volume_fraction: float,
 ) -> tuple[int, str]:
@@ -170,7 +170,7 @@ def _units_and_bottleneck(
     return by_volume, name
 
 
-def _hours(units: int, flow: int, volume_fraction: float) -> Optional[float]:
+def _hours(units: int, flow: int, volume_fraction: float) -> float | None:
     rate = flow * volume_fraction
     if units <= 0 or rate <= 0:
         return None
@@ -183,7 +183,7 @@ def _trade(
     proceeds: int,
     tax: int,
     instant_profit: int,
-    limit: Optional[int],
+    limit: int | None,
     buy_flows: list[tuple[str, int]],
     sell_flows: list[tuple[str, int]],
     volume_fraction: float,
@@ -281,7 +281,7 @@ def build_set_flips(
         piece_flips = [flips_by_id.get(cid) for cid, _ in components]
         if set_flip is None or any(p is None for p in piece_flips):
             missing = [set_name] if set_flip is None else []
-            missing += [n for (cid, n), p in zip(components, piece_flips) if p is None]
+            missing += [n for (cid, n), p in zip(components, piece_flips, strict=True) if p is None]
             log.warning("skipping %s: not in /mapping: %s", set_name, ", ".join(missing))
             continue
 
@@ -322,7 +322,7 @@ def build_set_flips(
 @dataclass
 class SetBuyLegValue:
     item_id: int
-    buy_price: Optional[int]
+    buy_price: int | None
     buy_quantity: int
     bought: int
     remaining_to_buy: int
@@ -333,11 +333,11 @@ class SetBuyLegValue:
 @dataclass
 class SetSellLegValue:
     item_id: int
-    cost_basis: Optional[int]     # what one of these cost you, per unit
+    cost_basis: int | None     # what one of these cost you, per unit
     units_sold: int
     units_listed: int
     units_unlisted: int
-    net_now_per_unit: Optional[int]   # selling one into the book right now
+    net_now_per_unit: int | None   # selling one into the book right now
     lots: list[LotValue]
 
 
@@ -347,16 +347,16 @@ class SetTradeSummary:
     complete_sets: int
     sets_ordered: int
     remaining_to_buy: int
-    cost_per_set: Optional[int]       # None until every buy price is recorded
+    cost_per_set: int | None       # None until every buy price is recorded
     outlay: int
 
-    realised_net: Optional[int]
-    listed_net_if_filled: Optional[int]
-    unlisted_value_now: Optional[int]
-    projected_total: Optional[int]
+    realised_net: int | None
+    listed_net_if_filled: int | None
+    unlisted_value_now: int | None
+    projected_total: int | None
 
-    current_profit_per_set: Optional[int]
-    reference_profit_per_set: Optional[int]
+    current_profit_per_set: int | None
+    reference_profit_per_set: int | None
     buy_advice: str
     advice_reason: str
 
@@ -367,12 +367,12 @@ class SetTradeSummary:
         return asdict(self)
 
 
-def _after_tax(price: Optional[int]) -> Optional[int]:
+def _after_tax(price: int | None) -> int | None:
     return None if price is None else price - ge_tax(price)
 
 
 def split_set_cost(
-    set_cost: int, piece_ids: list[int], weights: dict[int, Optional[int]]
+    set_cost: int, piece_ids: list[int], weights: dict[int, int | None]
 ) -> dict[int, int]:
     """Share what a set cost across its pieces, so each piece has a cost.
 
@@ -388,10 +388,10 @@ def split_set_cost(
         usable = [1] * len(piece_ids)
     total = sum(usable)
 
-    shares = {i: set_cost * w // total for i, w in zip(piece_ids, usable)}
+    shares = {i: set_cost * w // total for i, w in zip(piece_ids, usable, strict=True)}
     # Integer division leaves a few gp over; give them to the dearest piece.
     leftover = set_cost - sum(shares.values())
-    dearest = max(zip(piece_ids, usable), key=lambda pair: pair[1])[0]
+    dearest = max(zip(piece_ids, usable, strict=True), key=lambda pair: pair[1])[0]
     shares[dearest] += leftover
     return shares
 
@@ -400,8 +400,8 @@ def summarise_set_trade(
     direction: str,
     buys: list[dict[str, Any]],
     sells: list[dict[str, Any]],
-    prices: dict[int, tuple[Optional[int], Optional[int]]],
-    reference_highs: Optional[dict[int, int]] = None,
+    prices: dict[int, tuple[int | None, int | None]],
+    reference_highs: dict[int, int] | None = None,
     thinning_ratio: float = MARGIN_THINNING_RATIO,
 ) -> SetTradeSummary:
     """The whole state of one set trade, valued against the live book.
@@ -434,7 +434,7 @@ def summarise_set_trade(
     # --- what each thing you sell cost you ---
     sell_ids = [s["item_id"] for s in sells]
     if cost_per_set is None:
-        basis: dict[int, Optional[int]] = {i: None for i in sell_ids}
+        basis: dict[int, int | None] = {i: None for i in sell_ids}
     elif unpack:
         weights = {i: reference_highs.get(i) or prices.get(i, (None, None))[1] for i in sell_ids}
         basis = split_set_cost(cost_per_set, sell_ids, weights)
@@ -459,8 +459,8 @@ def summarise_set_trade(
                 value.total_net = None
             lots.append(value)
 
-        sold = sum(l.quantity for l in lots if l.sold)
-        listed = sum(l.quantity for l in lots if not l.sold)
+        sold = sum(lot.quantity for lot in lots if lot.sold)
+        listed = sum(lot.quantity for lot in lots if not lot.sold)
         net_now = None
         if cost is not None and high is not None:
             net_now = _after_tax(high) - cost
@@ -477,14 +477,14 @@ def summarise_set_trade(
     # --- totals, only once every cost is known ---
     realised = listed_if_filled = unlisted_value = projected = None
     if cost_per_set is not None:
-        realised = sum(l.total_net for s in sell_values for l in s.lots if l.sold)
-        listed_if_filled = sum(l.total_net for s in sell_values for l in s.lots if not l.sold)
+        realised = sum(lot.total_net for s in sell_values for lot in s.lots if lot.sold)
+        listed_if_filled = sum(lot.total_net for s in sell_values for lot in s.lots if not lot.sold)
         if all(s.net_now_per_unit is not None for s in sell_values):
             unlisted_value = sum(s.net_now_per_unit * s.units_unlisted for s in sell_values)
             projected = realised + listed_if_filled + unlisted_value
 
     # --- should you keep buying? ---
-    def profit_per_set(highs: dict[int, Optional[int]]) -> Optional[int]:
+    def profit_per_set(highs: dict[int, int | None]) -> int | None:
         if cost_per_set is None:
             return None
         proceeds = [_after_tax(highs.get(i)) for i in sell_ids]

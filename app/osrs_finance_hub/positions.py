@@ -18,9 +18,9 @@ import shutil
 import tempfile
 import time
 import uuid
-from dataclasses import dataclass, asdict, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 log = logging.getLogger(__name__)
 
@@ -41,13 +41,13 @@ class SellLot:
     price: int
     sold: bool = False
     created_at: float = field(default_factory=time.time)
-    sold_at: Optional[float] = None
+    sold_at: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "SellLot":
+    def from_dict(cls, raw: dict[str, Any]) -> SellLot:
         return cls(
             lot_id=str(raw["lot_id"]),
             quantity=max(0, int(raw.get("quantity") or 0)),
@@ -74,10 +74,10 @@ class Position:
     """
 
     item_id: int
-    buy_price: Optional[int] = None
+    buy_price: int | None = None
     buy_quantity: int = 0
     bought: int = 0
-    reference_sell: Optional[int] = None
+    reference_sell: int | None = None
     lots: list[SellLot] = field(default_factory=list)
     note: str = ""
     pinned_at: float = field(default_factory=time.time)
@@ -86,14 +86,14 @@ class Position:
     def is_open_position(self) -> bool:
         return self.buy_price is not None and (self.buy_quantity > 0 or self.bought > 0)
 
-    def lot(self, lot_id: str) -> Optional[SellLot]:
-        return next((l for l in self.lots if l.lot_id == lot_id), None)
+    def lot(self, lot_id: str) -> SellLot | None:
+        return next((lot for lot in self.lots if lot.lot_id == lot_id), None)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "Position":
+    def from_dict(cls, raw: dict[str, Any]) -> Position:
         """Read one entry, upgrading the version 1 shape as we go.
 
         Version 1 had a single `quantity` and an optional `target_sell`. The
@@ -101,7 +101,7 @@ class Position:
         format could not tell them apart, and a target price becomes a lot for
         the whole amount, which is what it meant in practice.
         """
-        lots = [SellLot.from_dict(l) for l in raw.get("lots", [])]
+        lots = [SellLot.from_dict(lot) for lot in raw.get("lots", [])]
 
         if "buy_quantity" in raw or "bought" in raw:
             buy_quantity = max(0, int(raw.get("buy_quantity") or 0))
@@ -133,12 +133,12 @@ class SetBuyLeg:
     each piece when packing. Same three numbers as a plain trade."""
 
     item_id: int
-    buy_price: Optional[int] = None
+    buy_price: int | None = None
     buy_quantity: int = 0
     bought: int = 0
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "SetBuyLeg":
+    def from_dict(cls, raw: dict[str, Any]) -> SetBuyLeg:
         return cls(
             item_id=int(raw["item_id"]),
             buy_price=(int(raw["buy_price"]) if raw.get("buy_price") is not None else None),
@@ -154,14 +154,14 @@ class SetSellLeg:
     item_id: int
     lots: list[SellLot] = field(default_factory=list)
 
-    def lot(self, lot_id: str) -> Optional[SellLot]:
-        return next((l for l in self.lots if l.lot_id == lot_id), None)
+    def lot(self, lot_id: str) -> SellLot | None:
+        return next((lot for lot in self.lots if lot.lot_id == lot_id), None)
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "SetSellLeg":
+    def from_dict(cls, raw: dict[str, Any]) -> SetSellLeg:
         return cls(
             item_id=int(raw["item_id"]),
-            lots=[SellLot.from_dict(l) for l in raw.get("lots", [])],
+            lots=[SellLot.from_dict(lot) for lot in raw.get("lots", [])],
         )
 
 
@@ -187,15 +187,15 @@ class SetPosition:
     reference_highs: dict[int, int] = field(default_factory=dict)
     pinned_at: float = field(default_factory=time.time)
 
-    def buy_leg(self, item_id: int) -> Optional[SetBuyLeg]:
-        return next((l for l in self.buys if l.item_id == item_id), None)
+    def buy_leg(self, item_id: int) -> SetBuyLeg | None:
+        return next((leg for leg in self.buys if leg.item_id == item_id), None)
 
-    def sell_leg(self, item_id: int) -> Optional[SetSellLeg]:
-        return next((l for l in self.sells if l.item_id == item_id), None)
+    def sell_leg(self, item_id: int) -> SetSellLeg | None:
+        return next((leg for leg in self.sells if leg.item_id == item_id), None)
 
     @property
     def has_buy_price(self) -> bool:
-        return any(l.buy_price is not None for l in self.buys)
+        return any(leg.buy_price is not None for leg in self.buys)
 
     def to_dict(self) -> dict[str, Any]:
         out = asdict(self)
@@ -204,15 +204,15 @@ class SetPosition:
         return out
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "SetPosition":
+    def from_dict(cls, raw: dict[str, Any]) -> SetPosition:
         direction = str(raw["direction"])
         if direction not in ("pack", "unpack"):
             raise ValueError(f"unknown set trade direction {direction!r}")
         return cls(
             set_id=int(raw["set_id"]),
             direction=direction,
-            buys=[SetBuyLeg.from_dict(l) for l in raw.get("buys", [])],
-            sells=[SetSellLeg.from_dict(l) for l in raw.get("sells", [])],
+            buys=[SetBuyLeg.from_dict(leg) for leg in raw.get("buys", [])],
+            sells=[SetSellLeg.from_dict(leg) for leg in raw.get("sells", [])],
             reference_highs={
                 int(k): int(v) for k, v in (raw.get("reference_highs") or {}).items()
             },
@@ -239,14 +239,14 @@ class MagicPosition:
 
     spell: str
     input_id: int
-    output_id: Optional[int] = None
+    output_id: int | None = None
     staff: bool = True
-    rune_cost: Optional[int] = None
-    buy_price: Optional[int] = None
+    rune_cost: int | None = None
+    buy_price: int | None = None
     buy_quantity: int = 0
     bought: int = 0
     cast: int = 0
-    reference_high: Optional[int] = None
+    reference_high: int | None = None
     lots: list[SellLot] = field(default_factory=list)
     pinned_at: float = field(default_factory=time.time)
 
@@ -258,8 +258,8 @@ class MagicPosition:
     def started(self) -> bool:
         return self.buy_price is not None or self.bought > 0
 
-    def lot(self, lot_id: str) -> Optional[SellLot]:
-        return next((l for l in self.lots if l.lot_id == lot_id), None)
+    def lot(self, lot_id: str) -> SellLot | None:
+        return next((lot for lot in self.lots if lot.lot_id == lot_id), None)
 
     def to_dict(self) -> dict[str, Any]:
         out = asdict(self)
@@ -267,8 +267,8 @@ class MagicPosition:
         return out
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "MagicPosition":
-        def opt(name: str) -> Optional[int]:
+    def from_dict(cls, raw: dict[str, Any]) -> MagicPosition:
+        def opt(name: str) -> int | None:
             return int(raw[name]) if raw.get(name) is not None else None
 
         return cls(
@@ -282,13 +282,13 @@ class MagicPosition:
             bought=max(0, int(raw.get("bought") or 0)),
             cast=max(0, int(raw.get("cast") or 0)),
             reference_high=opt("reference_high"),
-            lots=[SellLot.from_dict(l) for l in raw.get("lots", [])],
+            lots=[SellLot.from_dict(lot) for lot in raw.get("lots", [])],
             pinned_at=float(raw.get("pinned_at") or time.time()),
         )
 
 
 def _change_lot(
-    lot: SellLot, quantity: Optional[int], price: Optional[int], sold: Optional[bool]
+    lot: SellLot, quantity: int | None, price: int | None, sold: bool | None
 ) -> None:
     if quantity is not None:
         lot.quantity = max(0, quantity)
@@ -330,7 +330,7 @@ class PositionStore:
         self._positions: dict[int, Position] = {}
         self._sets: dict[int, SetPosition] = {}
         self._magic: dict[str, MagicPosition] = {}
-        self.load_error: Optional[str] = None
+        self.load_error: str | None = None
         self.load()
 
     # --- reading -------------------------------------------------------------
@@ -339,7 +339,7 @@ class PositionStore:
         """Pinned items, most recently pinned first."""
         return sorted(self._positions.values(), key=lambda p: p.pinned_at, reverse=True)
 
-    def get(self, item_id: int) -> Optional[Position]:
+    def get(self, item_id: int) -> Position | None:
         return self._positions.get(item_id)
 
     def __len__(self) -> int:
@@ -350,11 +350,11 @@ class PositionStore:
     def upsert(
         self,
         item_id: int,
-        buy_price: Optional[int] = None,
-        buy_quantity: Optional[int] = None,
-        bought: Optional[int] = None,
-        reference_sell: Optional[int] = None,
-        note: Optional[str] = None,
+        buy_price: int | None = None,
+        buy_quantity: int | None = None,
+        bought: int | None = None,
+        reference_sell: int | None = None,
+        note: str | None = None,
         clear_buy: bool = False,
     ) -> Position:
         """Pin an item, or change the details of a trade already on it.
@@ -388,7 +388,7 @@ class PositionStore:
 
     # --- sell lots -----------------------------------------------------------
 
-    def add_lot(self, item_id: int, quantity: int, price: int) -> Optional[SellLot]:
+    def add_lot(self, item_id: int, quantity: int, price: int) -> SellLot | None:
         """List a parcel of stock for sale. Returns None if nothing is pinned."""
         position = self._positions.get(item_id)
         if position is None:
@@ -402,10 +402,10 @@ class PositionStore:
         self,
         item_id: int,
         lot_id: str,
-        quantity: Optional[int] = None,
-        price: Optional[int] = None,
-        sold: Optional[bool] = None,
-    ) -> Optional[SellLot]:
+        quantity: int | None = None,
+        price: int | None = None,
+        sold: bool | None = None,
+    ) -> SellLot | None:
         """Change a lot, most often to mark it sold. None if it is not there."""
         position = self._positions.get(item_id)
         if position is None:
@@ -431,7 +431,7 @@ class PositionStore:
         if position is None:
             return False
         before = len(position.lots)
-        position.lots = [l for l in position.lots if l.lot_id != lot_id]
+        position.lots = [lot for lot in position.lots if lot.lot_id != lot_id]
         if len(position.lots) == before:
             return False
         self.save()
@@ -453,7 +453,7 @@ class PositionStore:
         """Pinned set trades, most recently pinned first."""
         return sorted(self._sets.values(), key=lambda p: p.pinned_at, reverse=True)
 
-    def get_set(self, set_id: int) -> Optional[SetPosition]:
+    def get_set(self, set_id: int) -> SetPosition | None:
         return self._sets.get(set_id)
 
     def pin_set(
@@ -483,11 +483,11 @@ class PositionStore:
         self,
         set_id: int,
         item_id: int,
-        buy_price: Optional[int] = None,
-        buy_quantity: Optional[int] = None,
-        bought: Optional[int] = None,
-        reference_highs: Optional[dict[int, int]] = None,
-    ) -> Optional[SetBuyLeg]:
+        buy_price: int | None = None,
+        buy_quantity: int | None = None,
+        bought: int | None = None,
+        reference_highs: dict[int, int] | None = None,
+    ) -> SetBuyLeg | None:
         """Change one buy leg. Only the fields passed are touched.
 
         `reference_highs` is only stored if there is no snapshot yet, so the
@@ -510,7 +510,7 @@ class PositionStore:
 
     def add_set_lot(
         self, set_id: int, item_id: int, quantity: int, price: int
-    ) -> Optional[SellLot]:
+    ) -> SellLot | None:
         position = self._sets.get(set_id)
         leg = position.sell_leg(item_id) if position else None
         if leg is None:
@@ -525,10 +525,10 @@ class PositionStore:
         set_id: int,
         item_id: int,
         lot_id: str,
-        quantity: Optional[int] = None,
-        price: Optional[int] = None,
-        sold: Optional[bool] = None,
-    ) -> Optional[SellLot]:
+        quantity: int | None = None,
+        price: int | None = None,
+        sold: bool | None = None,
+    ) -> SellLot | None:
         position = self._sets.get(set_id)
         leg = position.sell_leg(item_id) if position else None
         lot = leg.lot(lot_id) if leg else None
@@ -549,7 +549,7 @@ class PositionStore:
         leg = position.sell_leg(item_id) if position else None
         if leg is None or leg.lot(lot_id) is None:
             return False
-        leg.lots = [l for l in leg.lots if l.lot_id != lot_id]
+        leg.lots = [lot for lot in leg.lots if lot.lot_id != lot_id]
         self.save()
         return True
 
@@ -560,16 +560,16 @@ class PositionStore:
         """Pinned spells, most recently pinned first."""
         return sorted(self._magic.values(), key=lambda p: p.pinned_at, reverse=True)
 
-    def get_magic(self, key: str) -> Optional[MagicPosition]:
+    def get_magic(self, key: str) -> MagicPosition | None:
         return self._magic.get(key)
 
     def pin_magic(
         self,
         spell: str,
         input_id: int,
-        output_id: Optional[int],
+        output_id: int | None,
         staff: bool,
-        rune_cost: Optional[int],
+        rune_cost: int | None,
     ) -> MagicPosition:
         """Pin a spell on an item. Pinning one already pinned leaves it untouched."""
         key = magic_key(spell, input_id)
@@ -593,13 +593,13 @@ class PositionStore:
     def update_magic(
         self,
         key: str,
-        buy_price: Optional[int] = None,
-        buy_quantity: Optional[int] = None,
-        bought: Optional[int] = None,
-        cast: Optional[int] = None,
-        rune_cost: Optional[int] = None,
-        reference_high: Optional[int] = None,
-    ) -> Optional[MagicPosition]:
+        buy_price: int | None = None,
+        buy_quantity: int | None = None,
+        bought: int | None = None,
+        cast: int | None = None,
+        rune_cost: int | None = None,
+        reference_high: int | None = None,
+    ) -> MagicPosition | None:
         """Change the trade. Only the fields passed are touched.
 
         `reference_high` is only stored if there is no snapshot yet.
@@ -622,7 +622,7 @@ class PositionStore:
         self.save()
         return position
 
-    def add_magic_lot(self, key: str, quantity: int, price: int) -> Optional[SellLot]:
+    def add_magic_lot(self, key: str, quantity: int, price: int) -> SellLot | None:
         position = self._magic.get(key)
         if position is None or position.output_id is None:
             return None
@@ -635,10 +635,10 @@ class PositionStore:
         self,
         key: str,
         lot_id: str,
-        quantity: Optional[int] = None,
-        price: Optional[int] = None,
-        sold: Optional[bool] = None,
-    ) -> Optional[SellLot]:
+        quantity: int | None = None,
+        price: int | None = None,
+        sold: bool | None = None,
+    ) -> SellLot | None:
         position = self._magic.get(key)
         lot = position.lot(lot_id) if position else None
         if lot is None:
@@ -651,7 +651,7 @@ class PositionStore:
         position = self._magic.get(key)
         if position is None or position.lot(lot_id) is None:
             return False
-        position.lots = [l for l in position.lots if l.lot_id != lot_id]
+        position.lots = [lot for lot in position.lots if lot.lot_id != lot_id]
         self.save()
         return True
 

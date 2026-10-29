@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from osrs_finance_hub.cache import PriceCache
 from osrs_finance_hub.config import Settings
 from osrs_finance_hub.wiki_api import WikiApiError

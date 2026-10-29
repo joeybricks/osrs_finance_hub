@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
-
 from osrs_finance_hub.config import Settings
 from osrs_finance_hub.flips import build_flip
 from osrs_finance_hub.positions import PositionStore

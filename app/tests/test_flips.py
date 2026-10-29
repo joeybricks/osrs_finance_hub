@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from osrs_finance_hub.flips import (
     GE_TAX_CAP_PER_ITEM,
     GE_TAX_FREE_BELOW,
@@ -17,8 +16,8 @@ from osrs_finance_hub.flips import (
     build_all_flips,
     build_flip,
     estimate_fill_hours,
-    expected_drift,
     estimated_units_per_4h,
+    expected_drift,
     ge_tax,
     plan_flip,
     profit_per_hour,
@@ -29,7 +28,6 @@ from osrs_finance_hub.flips import (
     summarise_trade,
     value_position,
 )
-
 
 # --- tax ---------------------------------------------------------------------
 
@@ -819,7 +817,7 @@ def test_lot_outlook_reads_the_book():
         lot("patient", 10, 150),   # asking more than anyone else
         lot("gone", 10, 118, sold=True),
     ])
-    outlooks = {l.lot_id: l.outlook for l in t.lots}
+    outlooks = {lot.lot_id: lot.outlook for lot in t.lots}
     assert outlooks["cross"] == "immediate"
     assert outlooks["front"] == "competitive"
     assert outlooks["patient"] == "above market"

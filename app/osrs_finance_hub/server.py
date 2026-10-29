@@ -162,7 +162,7 @@ def create_app(settings: Settings) -> FastAPI:
                 buy_price=position.buy_price,
                 buy_quantity=position.buy_quantity,
                 bought=position.bought,
-                lots=[l.to_dict() for l in position.lots],
+                lots=[lot.to_dict() for lot in position.lots],
                 low=flip.low if flip else None,
                 high=flip.high if flip else None,
                 reference_sell=position.reference_sell,
@@ -182,7 +182,7 @@ def create_app(settings: Settings) -> FastAPI:
         try:
             return int(body[key])
         except (TypeError, ValueError):
-            raise HTTPException(status_code=422, detail=f"{key} must be a number")
+            raise HTTPException(status_code=422, detail=f"{key} must be a number") from None
 
     # --- pinned set trades ---------------------------------------------------
 
@@ -198,12 +198,12 @@ def create_app(settings: Settings) -> FastAPI:
 
     def _set_payload(position, by_id: dict[int, Any]) -> dict[str, Any]:
         """One pinned set trade, merged with the live book."""
-        ids = [position.set_id] + [l.item_id for l in position.buys + position.sells]
+        ids = [position.set_id] + [leg.item_id for leg in position.buys + position.sells]
         summary = summarise_set_trade(
             direction=position.direction,
-            buys=[asdict(l) for l in position.buys],
-            sells=[{"item_id": l.item_id, "lots": [x.to_dict() for x in l.lots]}
-                   for l in position.sells],
+            buys=[asdict(leg) for leg in position.buys],
+            sells=[{"item_id": leg.item_id, "lots": [lot.to_dict() for lot in leg.lots]}
+                   for leg in position.sells],
             prices={i: (by_id[i].low, by_id[i].high) for i in ids if i in by_id},
             reference_highs=position.reference_highs,
         )
@@ -267,7 +267,7 @@ def create_app(settings: Settings) -> FastAPI:
         buy_price = _whole_number(body, "buy_price")
         snapshot = None
         if buy_price is not None and not position.reference_highs:
-            ids = [l.item_id for l in position.buys + position.sells]
+            ids = [leg.item_id for leg in position.buys + position.sells]
             snapshot = {i: by_id[i].high for i in ids if i in by_id and by_id[i].high is not None}
 
         leg = store.update_set_buy(
@@ -346,7 +346,7 @@ def create_app(settings: Settings) -> FastAPI:
             bought=position.bought,
             cast=position.cast,
             rune_cost=position.rune_cost,
-            lots=[l.to_dict() for l in position.lots],
+            lots=[lot.to_dict() for lot in position.lots],
             alch_value=alch_value,
             output_low=output.low if output else None,
             output_high=output.high if output else None,
@@ -634,7 +634,7 @@ def create_app(settings: Settings) -> FastAPI:
         try:
             ids = [int(i) for i in raw_ids][: settings.trend_batch_size]
         except (TypeError, ValueError):
-            raise HTTPException(status_code=422, detail="ids must be numbers")
+            raise HTTPException(status_code=422, detail="ids must be numbers") from None
 
         semaphore = asyncio.Semaphore(3)
 

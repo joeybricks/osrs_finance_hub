@@ -11,8 +11,8 @@ A flipper therefore buys near `low` and sells near `high`.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
-from typing import Any, Optional
+from dataclasses import asdict, dataclass
+from typing import Any
 
 # --- Grand Exchange tax rules ------------------------------------------------
 # Update these three constants if Jagex changes the tax.
@@ -66,11 +66,11 @@ class Suggestion:
 
 
 def suggest_prices(
-    low: Optional[int],
-    high: Optional[int],
+    low: int | None,
+    high: int | None,
     aggression: float = DEFAULT_AGGRESSION,
     min_profit_per_unit: int = DEFAULT_MIN_PROFIT_PER_UNIT,
-) -> Optional[Suggestion]:
+) -> Suggestion | None:
     """The most aggressive price pair that still clears `min_profit_per_unit`.
 
     We move both offers inward by the same number of gp (`step`), so the buy
@@ -130,11 +130,11 @@ def suggest_prices(
 
 
 def estimate_fill_hours(
-    units: Optional[int],
+    units: int | None,
     hour_low_volume: int,
     hour_high_volume: int,
     volume_fraction: float,
-) -> tuple[Optional[float], Optional[float], Optional[float]]:
+) -> tuple[float | None, float | None, float | None]:
     """Rough hours to buy `units`, to sell them, and for the round trip.
 
     Which volume fills which offer is the opposite of what the names suggest.
@@ -175,61 +175,61 @@ class Flip:
     icon: str
     members: bool
     examine: str
-    lowalch: Optional[int]
-    highalch: Optional[int]
-    value: Optional[int]
-    limit: Optional[int]
+    lowalch: int | None
+    highalch: int | None
+    value: int | None
+    limit: int | None
 
     # Live prices from /latest.
-    low: Optional[int]          # instant-sell: what we buy at
-    high: Optional[int]         # instant-buy: what we sell at
-    low_time: Optional[int]
-    high_time: Optional[int]
+    low: int | None          # instant-sell: what we buy at
+    high: int | None         # instant-buy: what we sell at
+    low_time: int | None
+    high_time: int | None
 
     # Hourly aggregates from /1h.
     hour_low_volume: int
     hour_high_volume: int
-    hour_avg_low: Optional[int]
-    hour_avg_high: Optional[int]
+    hour_avg_low: int | None
+    hour_avg_high: int | None
 
     # Derived flip numbers.
-    tax: Optional[int]
-    margin: Optional[int]
-    roi: Optional[float]            # margin / low, as a fraction
-    est_units_per_4h: Optional[int]
-    est_profit_per_4h: Optional[int]
-    capital_required: Optional[int]
+    tax: int | None
+    margin: int | None
+    roi: float | None            # margin / low, as a fraction
+    est_units_per_4h: int | None
+    est_profit_per_4h: int | None
+    capital_required: int | None
 
     # Age of the staler of the two price timestamps, in seconds.
-    price_age_seconds: Optional[int]
+    price_age_seconds: int | None
 
     # Sanity check on the spread.
-    hour_avg_spread: Optional[int]
-    spread_ratio: Optional[float]
+    hour_avg_spread: int | None
+    spread_ratio: float | None
     suspicious_spread: bool
 
     # Suggested offer prices, and what they are worth.
-    suggested_buy: Optional[int]
-    suggested_sell: Optional[int]
-    suggested_net_per_unit: Optional[int]
-    suggested_margin_conceded: Optional[float]
-    suggested_profit_per_4h: Optional[int]
-    suggested_capital_required: Optional[int]
+    suggested_buy: int | None
+    suggested_sell: int | None
+    suggested_net_per_unit: int | None
+    suggested_margin_conceded: float | None
+    suggested_profit_per_4h: int | None
+    suggested_capital_required: int | None
 
     # Rough hours for the money to come back, at est_units_per_4h.
-    est_hours_to_buy: Optional[float]
-    est_hours_to_sell: Optional[float]
-    est_hours_total: Optional[float]
+    est_hours_to_buy: float | None
+    est_hours_to_sell: float | None
+    est_hours_total: float | None
 
     # Profit divided by the round trip, for the quick-flips view.
-    est_profit_per_hour: Optional[int]
+    est_profit_per_hour: int | None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
 
 def estimated_units_per_4h(
-    buy_limit: Optional[int],
+    buy_limit: int | None,
     hour_low_volume: int,
     hour_high_volume: int,
     volume_fraction: float,
@@ -249,12 +249,12 @@ def estimated_units_per_4h(
 
 
 def spread_sanity(
-    low: Optional[int],
-    high: Optional[int],
-    hour_avg_low: Optional[int],
-    hour_avg_high: Optional[int],
+    low: int | None,
+    high: int | None,
+    hour_avg_low: int | None,
+    hour_avg_high: int | None,
     spike_ratio: float = DEFAULT_SPREAD_SPIKE_RATIO,
-) -> tuple[Optional[int], Optional[float], bool]:
+) -> tuple[int | None, float | None, bool]:
     """Compare the live spread against the 1h average spread.
 
     Returns (hour_avg_spread, ratio, suspicious). A live spread far wider than
@@ -449,11 +449,11 @@ class FlipPlan:
     total_net: int             # profit across the whole quantity
     total_tax: int
     total_capital: int         # gold you need up front
-    roi: Optional[float]
+    roi: float | None
 
-    est_hours_to_buy: Optional[float]
-    est_hours_to_sell: Optional[float]
-    est_hours_total: Optional[float]
+    est_hours_to_buy: float | None
+    est_hours_to_sell: float | None
+    est_hours_total: float | None
     speed: str                 # one of SPEED_BANDS, SLOWEST_SPEED, or "unknown"
     warnings: list[str]
 
@@ -474,7 +474,7 @@ def _queue_position(price: int, passive: int, aggressive: int) -> float:
     return max(0.0, min(1.0, position))
 
 
-def _rate_speed(hours: Optional[float]) -> str:
+def _rate_speed(hours: float | None) -> str:
     if hours is None:
         return "unknown"
     for name, ceiling in SPEED_BANDS:
@@ -488,14 +488,14 @@ def plan_flip(
     sell: int,
     quantity: int,
     *,
-    low: Optional[int],
-    high: Optional[int],
+    low: int | None,
+    high: int | None,
     hour_low_volume: int,
     hour_high_volume: int,
-    buy_limit: Optional[int],
+    buy_limit: int | None,
     volume_fraction: float,
     suspicious_spread: bool = False,
-    price_age_seconds: Optional[int] = None,
+    price_age_seconds: int | None = None,
 ) -> FlipPlan:
     """Work out the profit and the likely speed of one specific trade.
 
@@ -631,9 +631,9 @@ class TrendAnalysis:
     points_used: int
     window_days: float
 
-    change_7d: Optional[float]      # fraction, e.g. -0.04 for a 4% fall
-    change_30d: Optional[float]
-    change_window: Optional[float]
+    change_7d: float | None      # fraction, e.g. -0.04 for a 4% fall
+    change_30d: float | None
+    change_window: float | None
 
     slope_per_day: float            # regression gradient, fraction of price a day
     volatility_daily: float         # standard deviation of daily returns
@@ -686,7 +686,7 @@ def _least_squares_slope(values: list[float]) -> float:
 
 def _change_over_days(
     prices: list[float], days: float, points_per_day: float
-) -> Optional[float]:
+) -> float | None:
     """Fractional price change across the last `days` of the series."""
     span = int(round(days * points_per_day))
     if span < 1 or len(prices) <= span:
@@ -724,7 +724,7 @@ def _downgrade(safety: str, steps: int = 1) -> str:
     return SAFETY_ORDER[max(0, index - steps)]
 
 
-def analyse_trend(points: list[dict[str, Any]], timestep: str = "24h") -> Optional[TrendAnalysis]:
+def analyse_trend(points: list[dict[str, Any]], timestep: str = "24h") -> TrendAnalysis | None:
     """Turn one item's price history into a direction and a safety rating.
 
     Returns None when there is too little history to say anything useful.
@@ -837,8 +837,8 @@ def analyse_trend(points: list[dict[str, Any]], timestep: str = "24h") -> Option
 
 
 def expected_drift(
-    trend: Optional[TrendAnalysis], price: int, hold_hours: Optional[float]
-) -> Optional[float]:
+    trend: TrendAnalysis | None, price: int, hold_hours: float | None
+) -> float | None:
     """Gold per unit the trend alone would move the price over a hold.
 
     Negative means the price is expected to fall while you hold. This is a
@@ -900,11 +900,11 @@ class PositionValue:
     """What an open position is worth if you sold into the book right now."""
 
     break_even: int            # lowest sell price that returns your outlay
-    sell_now: Optional[int]    # the live instant-buy price, what you would get
-    net_per_unit_now: Optional[int]
-    total_now: Optional[int]
-    in_profit: Optional[bool]
-    gap_to_break_even: Optional[int]  # gp the price must still move to break even
+    sell_now: int | None    # the live instant-buy price, what you would get
+    net_per_unit_now: int | None
+    total_now: int | None
+    in_profit: bool | None
+    gap_to_break_even: int | None  # gp the price must still move to break even
     outlay: int                # what the stock cost you
 
     def to_dict(self) -> dict[str, Any]:
@@ -912,7 +912,7 @@ class PositionValue:
 
 
 def value_position(
-    buy_price: int, quantity: int, current_high: Optional[int]
+    buy_price: int, quantity: int, current_high: int | None
 ) -> PositionValue:
     """Price up stock you already hold against the current book.
 
@@ -987,12 +987,12 @@ class LotValue:
 class TradeSummary:
     """The whole state of one live trade."""
 
-    buy_price: Optional[int]
+    buy_price: int | None
     buy_quantity: int
     bought: int
     remaining_to_buy: int
     outlay: int
-    break_even: Optional[int]
+    break_even: int | None
 
     units_sold: int
     units_listed: int
@@ -1000,11 +1000,11 @@ class TradeSummary:
 
     realised_net: int             # banked, from lots marked sold
     listed_net_if_filled: int     # what the open lots add if they all go
-    unlisted_value_now: Optional[int]   # loose stock dumped at the current price
-    projected_total: Optional[int]      # all three added up
+    unlisted_value_now: int | None   # loose stock dumped at the current price
+    projected_total: int | None      # all three added up
 
-    current_net_per_unit: Optional[int]    # buying now and dumping now
-    reference_net_per_unit: Optional[int]  # the same figure when you started
+    current_net_per_unit: int | None    # buying now and dumping now
+    reference_net_per_unit: int | None  # the same figure when you started
 
     buy_advice: str
     advice_reason: str
@@ -1014,7 +1014,7 @@ class TradeSummary:
         return asdict(self)
 
 
-def lot_outlook(price: int, sold: bool, low: Optional[int], high: Optional[int]) -> str:
+def lot_outlook(price: int, sold: bool, low: int | None, high: int | None) -> str:
     """How a sell offer at `price` sits against the current book.
 
     Your sell offer is filled by players instant-buying. Asking below the best
@@ -1038,8 +1038,8 @@ def value_lot(
     price: int,
     sold: bool,
     buy_price: int,
-    low: Optional[int],
-    high: Optional[int],
+    low: int | None,
+    high: int | None,
 ) -> LotValue:
     """Profit on one lot, after tax, against what the stock cost you."""
     tax = ge_tax(price)
@@ -1058,8 +1058,8 @@ def value_lot(
 
 def advise_on_buying(
     remaining_to_buy: int,
-    current_net: Optional[int],
-    reference_net: Optional[int],
+    current_net: int | None,
+    reference_net: int | None,
     thinning_ratio: float = MARGIN_THINNING_RATIO,
     unit: str = "unit",
 ) -> tuple[str, str]:
@@ -1096,13 +1096,13 @@ def advise_on_buying(
 
 
 def summarise_trade(
-    buy_price: Optional[int],
+    buy_price: int | None,
     buy_quantity: int,
     bought: int,
     lots: list[dict[str, Any]],
-    low: Optional[int],
-    high: Optional[int],
-    reference_sell: Optional[int] = None,
+    low: int | None,
+    high: int | None,
+    reference_sell: int | None = None,
     thinning_ratio: float = MARGIN_THINNING_RATIO,
 ) -> TradeSummary:
     """Pull one trade's buy, its sell lots and the live book into one picture.
@@ -1126,12 +1126,12 @@ def summarise_trade(
         for lot in lots
     ]
 
-    units_sold = sum(l.quantity for l in lot_values if l.sold)
-    units_listed = sum(l.quantity for l in lot_values if not l.sold)
+    units_sold = sum(lot.quantity for lot in lot_values if lot.sold)
+    units_listed = sum(lot.quantity for lot in lot_values if not lot.sold)
     units_unlisted = max(0, bought - units_sold - units_listed)
 
-    realised = sum(l.total_net for l in lot_values if l.sold)
-    listed_if_filled = sum(l.total_net for l in lot_values if not l.sold)
+    realised = sum(lot.total_net for lot in lot_values if lot.sold)
+    listed_if_filled = sum(lot.total_net for lot in lot_values if not lot.sold)
 
     # Loose stock is valued at what the book would pay for it this second.
     if high is not None and buy_price is not None:
@@ -1180,8 +1180,8 @@ def summarise_trade(
 
 
 def profit_per_hour(
-    est_profit_per_4h: Optional[int], est_hours_total: Optional[float]
-) -> Optional[int]:
+    est_profit_per_4h: int | None, est_hours_total: float | None
+) -> int | None:
     """Profit divided by how long the round trip takes.
 
     This is how hard your capital is working, which is what matters when you
@@ -1212,7 +1212,7 @@ class LongTermView:
     slope_per_day: float
     drawdown_from_peak: float
     position_in_range: float
-    change_30d: Optional[float]
+    change_30d: float | None
     reason: str
 
     def to_dict(self) -> dict[str, Any]:
@@ -1220,10 +1220,10 @@ class LongTermView:
 
 
 def assess_long_term(
-    trend: Optional[TrendAnalysis],
+    trend: TrendAnalysis | None,
     min_slope: float = LONG_TERM_MIN_SLOPE,
     min_drawdown: float = LONG_TERM_MIN_DRAWDOWN,
-) -> Optional[LongTermView]:
+) -> LongTermView | None:
     """Score an item as something to buy low and hold while the trend carries it.
 
     Two things have to be true at once. The price must be rising across the
