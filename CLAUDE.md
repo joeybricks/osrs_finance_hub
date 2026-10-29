@@ -14,15 +14,17 @@ OSRS Grand Exchange flipping app, grown into a low-cost, multi-cloud learning pr
 
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"                     # app + pytest, pytest-asyncio
+pip install -e "./app[dev]"                 # app + pytest, pytest-asyncio
 
 osrs_finance_hub serve --contact "you@example.com" --no-browser   # http://127.0.0.1:8080/
 osrs_finance_hub serve --verbose                  # debug logging; API docs at /api/docs
 
-pytest                                      # whole suite (asyncio_mode = auto)
-pytest tests/test_flips.py                  # one file
-pytest tests/test_flips.py -k ge_tax        # tests matching a name
+pytest app                                  # whole suite (asyncio_mode = auto)
+pytest app/tests/test_flips.py              # one file
+pytest app/tests/test_flips.py -k ge_tax    # tests matching a name
 ```
+
+All app code, tests and `pyproject.toml` live under `app/`; module paths below are relative to `app/osrs_finance_hub/`.
 
 No linter or formatter is configured.
 

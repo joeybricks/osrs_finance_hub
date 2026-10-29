@@ -58,8 +58,10 @@ git clone <this repo>
 cd osrs_finance_hub
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
+pip install -e ./app
 ```
+
+The app lives in the `app/` folder of the repo, so run these from the repo root.
 
 ## Run
 
@@ -680,9 +682,11 @@ age is in the last table column, so you can always see how old the numbers are.
 ## Tests
 
 ```bash
-pip install -e ".[dev]"
-pytest
+pip install -e "./app[dev]"
+pytest app
 ```
+
+Or `cd app` and run plain `pytest`.
 
 The suite covers the tax cap and the sub-50gp exemption, margin and ROI, the
 volume and buy-limit maths, the spread sanity check, ranking, the suggested

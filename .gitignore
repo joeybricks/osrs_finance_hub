@@ -1,3 +1,4 @@
+# Python
 __pycache__/
 *.pyc
 *.egg-info/
@@ -7,5 +8,33 @@ venv/
 build/
 dist/
 
+# macOS
+.DS_Store
 
+# Secrets: this repo is public, so nothing below may ever be committed.
+# Commit a .env.example with placeholder values instead.
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+*.pem
+*.key
+*.p12
+*.pfx
+*credentials*.json
+*service-account*.json
+
+# Terraform: state and variable files can hold secrets.
+# .terraform.lock.hcl is deliberately not ignored; it should be committed.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+crash.log
+crash.*.log
+
+# Session notes
 work_so_far/*
