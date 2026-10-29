@@ -1,0 +1,28 @@
+# Root of the uv workspace. This file is not a package itself (a "virtual"
+# workspace root); it only lists the member packages, which share one
+# lock file (uv.lock) and one virtual environment (.venv).
+[tool.uv.workspace]
+members = ["app"]
+
+# Repo-wide dev tools (lint, workflow lint, git hooks). App-specific test
+# deps stay in app/pyproject.toml. `uv sync` installs both dev groups.
+[dependency-groups]
+dev = ["ruff>=0.8", "actionlint-py>=1.7", "pre-commit>=4"]
+
+# Ruff config lives at the root so it covers app/, src/, evals/ and ops/.
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes (unused imports etc.), I isort,
+# B bugbear (likely bugs), UP pyupgrade (modern syntax for py310).
+select = ["E", "W", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Static wiki data table: one entry per line reads better than wrapped lines.
+"app/osrs_finance_hub/set_data.py" = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI declares request bodies as `param = Body(...)` defaults; that is safe.
+extend-immutable-calls = ["fastapi.Body", "fastapi.Query", "fastapi.Path", "fastapi.Depends"]

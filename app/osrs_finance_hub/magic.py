@@ -16,7 +16,7 @@ everyone casts these spells, and the UI lets you pick.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Optional
+from typing import Any
 
 from .flips import (
     BUY_UNKNOWN,
@@ -49,10 +49,10 @@ BOLTS = "bolts"
 class RuneCost:
     """What the runes for one item cost, four ways."""
 
-    patient: Optional[int]          # every rune bought at its low
-    patient_staff: Optional[int]    # elementals free
-    instant: Optional[int]          # every rune bought at its high
-    instant_staff: Optional[int]
+    patient: int | None          # every rune bought at its low
+    patient_staff: int | None    # elementals free
+    instant: int | None          # every rune bought at its high
+    instant_staff: int | None
 
 
 @dataclass
@@ -66,39 +66,39 @@ class MagicOpportunity:
     input_id: int
     input_name: str
     input_icon: str
-    input_low: Optional[int]
-    input_high: Optional[int]
-    limit: Optional[int]
+    input_low: int | None
+    input_high: int | None
+    limit: int | None
 
     # What comes out: an item for enchanting, coins for alchemy.
-    output_id: Optional[int]
+    output_id: int | None
     output_name: str
     output_icon: str
-    output_low: Optional[int]
-    output_high: Optional[int]
-    proceeds: Optional[int]       # per item, after tax: patient sale or alch value
-    instant_proceeds: Optional[int]
+    output_low: int | None
+    output_high: int | None
+    proceeds: int | None       # per item, after tax: patient sale or alch value
+    instant_proceeds: int | None
 
     rune_cost: RuneCost
 
     # Per item. "_staff" means the elemental runes were free.
-    profit: Optional[int]
-    profit_staff: Optional[int]
-    instant_profit: Optional[int]
-    instant_profit_staff: Optional[int]
+    profit: int | None
+    profit_staff: int | None
+    instant_profit: int | None
+    instant_profit_staff: int | None
 
     exp_per_item: float
     items_per_hour_casting: int   # if you never ran out of stock
-    est_units_per_4h: Optional[int]
-    est_profit_per_4h: Optional[int]
-    est_profit_per_4h_staff: Optional[int]
-    est_hours_casting: Optional[float]   # time spent casting the 4h batch
-    est_profit_per_hour_casting: Optional[int]
-    est_profit_per_hour_casting_staff: Optional[int]
-    capital_required: Optional[int]
-    bottleneck: Optional[str]
+    est_units_per_4h: int | None
+    est_profit_per_4h: int | None
+    est_profit_per_4h_staff: int | None
+    est_hours_casting: float | None   # time spent casting the 4h batch
+    est_profit_per_hour_casting: int | None
+    est_profit_per_hour_casting_staff: int | None
+    capital_required: int | None
+    bottleneck: str | None
 
-    price_age_seconds: Optional[int]
+    price_age_seconds: int | None
     suspicious_spread: bool
 
     def to_dict(self) -> dict[str, Any]:
@@ -132,14 +132,14 @@ def items_per_hour(spell: Spell) -> int:
     return int(3600 / (spell.ticks * TICK_SECONDS) * spell.per_cast)
 
 
-def _minus(a: Optional[int], *rest: Optional[int]) -> Optional[int]:
+def _minus(a: int | None, *rest: int | None) -> int | None:
     if a is None or any(r is None for r in rest):
         return None
     return a - sum(rest)
 
 
 def _units(
-    limit: Optional[int], flows: list[tuple[str, int]], volume_fraction: float
+    limit: int | None, flows: list[tuple[str, int]], volume_fraction: float
 ) -> tuple[int, str]:
     """Same rule as a flip: our share of the thinnest flow, capped by the limit."""
     name, flow = min(flows, key=lambda f: f[1])
@@ -153,7 +153,7 @@ def build_opportunity(
     kind: str,
     spell: Spell,
     item: Flip,
-    output: Optional[Flip],
+    output: Flip | None,
     runes: RuneCost,
     volume_fraction: float,
 ) -> MagicOpportunity:
@@ -295,7 +295,7 @@ def build_magic_opportunities(
 # (the coins are the sale) or enchant it and sell what it makes in lots.
 
 
-def spell_kind(spell_key: str) -> Optional[str]:
+def spell_kind(spell_key: str) -> str | None:
     if spell_key in (HIGH_ALCH, LOW_ALCH):
         return spell_key
     if spell_key.startswith("enchant_"):
@@ -305,7 +305,7 @@ def spell_kind(spell_key: str) -> Optional[str]:
     return None
 
 
-def find_recipe(spell_key: str, input_id: int) -> Optional[tuple[str, Spell, Optional[int]]]:
+def find_recipe(spell_key: str, input_id: int) -> tuple[str, Spell, int | None] | None:
     """(kind, spell, output id) for one spell on one item, or None.
 
     Alchemy works on any item, so it has no output and the caller checks the
@@ -326,7 +326,7 @@ def find_recipe(spell_key: str, input_id: int) -> Optional[tuple[str, Spell, Opt
 @dataclass
 class MagicTradeSummary:
     kind: str
-    cost_each: Optional[int]          # buy price plus runes
+    cost_each: int | None          # buy price plus runes
     buy_quantity: int
     bought: int
     remaining_to_buy: int
@@ -340,13 +340,13 @@ class MagicTradeSummary:
     units_unlisted: int               # enchanted, sitting in the bank
     lots: list[LotValue]
 
-    realised_net: Optional[int]       # alch coins, or sold lots
-    listed_net_if_filled: Optional[int]
-    unlisted_value_now: Optional[int]  # enchanted or uncast stock at today's price
-    projected_total: Optional[int]
+    realised_net: int | None       # alch coins, or sold lots
+    listed_net_if_filled: int | None
+    unlisted_value_now: int | None  # enchanted or uncast stock at today's price
+    projected_total: int | None
 
-    current_profit_each: Optional[int]
-    reference_profit_each: Optional[int]
+    current_profit_each: int | None
+    reference_profit_each: int | None
     buy_advice: str
     advice_reason: str
 
@@ -356,16 +356,16 @@ class MagicTradeSummary:
 
 def summarise_magic_trade(
     kind: str,
-    buy_price: Optional[int],
+    buy_price: int | None,
     buy_quantity: int,
     bought: int,
     cast: int,
-    rune_cost: Optional[int],
+    rune_cost: int | None,
     lots: list[dict[str, Any]],
-    alch_value: Optional[int] = None,
-    output_low: Optional[int] = None,
-    output_high: Optional[int] = None,
-    reference_high: Optional[int] = None,
+    alch_value: int | None = None,
+    output_low: int | None = None,
+    output_high: int | None = None,
+    reference_high: int | None = None,
     thinning_ratio: float = MARGIN_THINNING_RATIO,
 ) -> MagicTradeSummary:
     """The whole state of one alching or enchanting trade.
@@ -382,12 +382,12 @@ def summarise_magic_trade(
     cost = buy_price + runes if buy_price is not None else None
     outlay = (buy_price or 0) * bought + runes * cast
 
-    def proceeds(high: Optional[int]) -> Optional[int]:
+    def proceeds(high: int | None) -> int | None:
         if alch:
             return alch_value
         return None if high is None else high - ge_tax(high)
 
-    def net(p: Optional[int]) -> Optional[int]:
+    def net(p: int | None) -> int | None:
         return None if p is None or cost is None else p - cost
 
     current = net(proceeds(output_high))
@@ -412,12 +412,12 @@ def summarise_magic_trade(
                 value.net_per_unit = None
                 value.total_net = None
             lot_values.append(value)
-        sold = sum(l.quantity for l in lot_values if l.sold)
-        listed = sum(l.quantity for l in lot_values if not l.sold)
+        sold = sum(lot.quantity for lot in lot_values if lot.sold)
+        listed = sum(lot.quantity for lot in lot_values if not lot.sold)
         unlisted = max(0, cast - sold - listed)
         if cost is not None:
-            realised = sum(l.total_net for l in lot_values if l.sold)
-            listed_if_filled = sum(l.total_net for l in lot_values if not l.sold)
+            realised = sum(lot.total_net for lot in lot_values if lot.sold)
+            listed_if_filled = sum(lot.total_net for lot in lot_values if not lot.sold)
             if current is not None:
                 # Enchanted stock and stock still to cast both end up sold.
                 unlisted_value = current * (unlisted + uncast)

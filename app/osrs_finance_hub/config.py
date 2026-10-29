@@ -62,7 +62,7 @@ class Settings:
     open_browser: bool = True
 
     @classmethod
-    def from_env(cls) -> "Settings":
+    def from_env(cls) -> Settings:
         """Build settings from OSRS_FINANCE_HUB_* environment variables."""
         env = os.environ
         return cls(

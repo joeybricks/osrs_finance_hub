@@ -51,14 +51,12 @@ a link to its wiki page, and a price history chart over a selectable span.
 
 ## Install
 
-Requires Python 3.10 or newer.
+Requires Python 3.10 or newer and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone <this repo>
 cd osrs_finance_hub
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ./app
+uv sync
 ```
 
 The app lives in the `app/` folder of the repo, so run these from the repo root.
@@ -66,7 +64,7 @@ The app lives in the `app/` folder of the repo, so run these from the repo root.
 ## Run
 
 ```bash
-osrs_finance_hub serve --contact "you@example.com"
+uv run osrs_finance_hub serve --contact "you@example.com"
 ```
 
 That starts the server on <http://127.0.0.1:8080/> and opens your browser. The
@@ -682,11 +680,10 @@ age is in the last table column, so you can always see how old the numbers are.
 ## Tests
 
 ```bash
-pip install -e "./app[dev]"
-pytest app
+uv run pytest app
 ```
 
-Or `cd app` and run plain `pytest`.
+Or `cd app` and run `uv run pytest`.
 
 The suite covers the tax cap and the sub-50gp exemption, margin and ROI, the
 volume and buy-limit maths, the spread sanity check, ranking, the suggested
@@ -733,7 +730,7 @@ install [Tailscale](https://tailscale.com) on both devices and bind to the
 machine's Tailscale address:
 
 ```bash
-osrs_finance_hub serve --contact you@example.com --host 100.x.y.z
+uv run osrs_finance_hub serve --contact you@example.com --host 100.x.y.z
 ```
 
 Binding to the Tailscale address rather than `0.0.0.0` means only your own

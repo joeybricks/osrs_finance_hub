@@ -6,27 +6,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OSRS Finance Hub: a local FastAPI web app that reads the OSRS Wiki real-time prices API (`prices.runescape.wiki`) and ranks Grand Exchange flips. No database, no build step for the frontend. `README.md` is the detailed spec for the maths, UI behaviour and thresholds; read the relevant section before changing a feature.
 
-## Plan 
+## Plan
 
 OSRS Grand Exchange flipping app, grown into a low-cost, multi-cloud learning project: price and text ingestion, LLM signal extraction (Gemma), evals, scoring/backtesting, and an agent layer. The aim is cloud solution-design experience as much as the app itself.
 
 ## Commands
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e "./app[dev]"                 # app + pytest, pytest-asyncio
+uv sync                                     # .venv from uv.lock: app + pytest, ruff, actionlint, pre-commit
+uv run pre-commit install                   # once per clone
 
-osrs_finance_hub serve --contact "you@example.com" --no-browser   # http://127.0.0.1:8080/
-osrs_finance_hub serve --verbose                  # debug logging; API docs at /api/docs
+uv run osrs_finance_hub serve --contact "you@example.com" --no-browser   # http://127.0.0.1:8080/
+uv run osrs_finance_hub serve --verbose     # debug logging; API docs at /api/docs
 
-pytest app                                  # whole suite (asyncio_mode = auto)
-pytest app/tests/test_flips.py              # one file
-pytest app/tests/test_flips.py -k ge_tax    # tests matching a name
+uv run pytest app                           # whole suite (asyncio_mode = auto)
+uv run pytest app/tests/test_flips.py       # one file
+uv run pytest app/tests/test_flips.py -k ge_tax    # tests matching a name
+
+uv run ruff check                           # lint (config in root pyproject.toml)
+uv run pre-commit run --all-files           # every hook over the whole repo
 ```
+
+Packages are managed with uv as a workspace: root `pyproject.toml` (virtual root, repo-wide dev tools, Ruff config) with `app/` as a member. Add deps with `uv add --package osrs_finance_hub <name>`; never `pip install`.
 
 All app code, tests and `pyproject.toml` live under `app/`; module paths below are relative to `app/osrs_finance_hub/`.
 
-No linter or formatter is configured.
+Ruff is the linter (rules in root `pyproject.toml`; `set_data.py` is exempt from line length). No formatter is enforced yet. CI (`.github/workflows/ci.yml`) runs ruff, pytest, actionlint, gitleaks and a launch smoke test.
 
 ## Architecture
 
