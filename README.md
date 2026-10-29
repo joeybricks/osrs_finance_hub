@@ -20,13 +20,18 @@ the maths works and how to run it.
 ## Quick start
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e "./app[dev]"
+uv sync                      # creates .venv from uv.lock (app + dev tools)
+uv run pre-commit install    # git hooks: gitleaks, ruff, whitespace fixers
 
-osrs_finance_hub serve --contact "you@example.com"
-pytest app
+uv run osrs_finance_hub serve --contact "you@example.com"
+uv run pytest app
+uv run ruff check
 ```
+
+Python packages are managed with [uv](https://docs.astral.sh/uv/). The repo is
+a uv workspace: the root `pyproject.toml` lists the member packages (`app/` for
+now) and holds the repo-wide dev tools; `uv.lock` pins every dependency.
+Add a dependency with `uv add --package osrs_finance_hub <name>`.
 
 ## Secrets
 
