@@ -1,7 +1,7 @@
 # Runbook: budget and phone alerts (OSRS-14, OSRS-15)
 
 A £2 monthly budget on `osrs-infra` emails you as spend climbs, and publishes
-its status to a Pub/Sub topic for the killswitch (OSRS-16).
+its status to a Pub/Sub topic (for a future automatic killswitch).
 
 ```
 Cloud Billing account
@@ -9,9 +9,10 @@ Cloud Billing account
      ├─ email to billing admins/users at 25/50/90/100% actual + 100% forecast
      │    └─ Gmail on your phone: push notification            (OSRS-15)
      └─ Pub/Sub topic budget-alerts, several times a day        (infra/envs/prod/pubsub.tf)
-          ├─ subscription budget-alerts-audit: last 24h of messages, read by hand
-          └─ killswitch function (OSRS-16, not built yet)
+          └─ subscription budget-alerts-audit: last 24h of messages, read by hand
 ```
+At 100%, run the killswitch by hand from your phone ([killswitch.md](killswitch.md)).
+Nothing reads the topic automatically yet.
 
 **A budget alerts, it never caps.** Spend carries on past 100%. Cost data lags
 by hours, so an email can arrive after the money is spent.

@@ -1,0 +1,88 @@
+name: Killswitch
+
+# The billing killswitch button (OSRS-17). Runs ops/scripts/killswitch.sh as
+# killswitch-sa, which can only read and remove a project's billing link.
+#
+# Run it from Actions > Killswitch > Run workflow (works in the GitHub mobile
+# app). Pick the `master` branch: GCP only lets runs on master in the
+# `killswitch` environment borrow killswitch-sa (infra/iam/wif.tf).
+#
+# Dry run is the default. A real unlink needs dry run unticked AND the word
+# UNLINK typed, so a stray tap on a phone can't do it.
+# The result is in the run's summary; GitHub notifies you about the run.
+# Restore: ops/runbooks/killswitch.md.
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Project to unlink billing from (the script's allow list)
+        type: choice
+        options:
+          - osrs-infra
+        default: osrs-infra
+      dry_run:
+        description: Dry run (only report what would happen)
+        type: boolean
+        default: true
+      confirm:
+        description: For a real run, type UNLINK
+        type: string
+        required: false
+
+# One run at a time, and never cancel: a newer dry run must not abort a real
+# unlink halfway (same exception as tf-apply).
+concurrency:
+  group: killswitch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write  # lets the job ask GitHub for an OIDC token; nothing else
+
+env:
+  WIF_PROVIDER: projects/364165303320/locations/global/workloadIdentityPools/github/providers/github-actions
+  KILLSWITCH_SA: killswitch-sa@osrs-infra.iam.gserviceaccount.com
+
+jobs:
+  killswitch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Puts environment=killswitch in the OIDC token; WIF checks it.
+    environment: killswitch
+    steps:
+      # Before signing in, so a wrong branch or a missing word never borrows
+      # the account. Inputs go through env, never ${{ }} inside the script,
+      # so typed text can't run as shell.
+      - name: Check branch and confirmation
+        env:
+          REF: ${{ github.ref }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$REF" != "refs/heads/master" ]; then
+            echo "::error::Run this from master (got $REF). GCP only trusts master runs for killswitch-sa."
+            exit 1
+          fi
+          if [ "$DRY_RUN" != "true" ] && [ "$CONFIRM" != "UNLINK" ]; then
+            echo "::error::Real run refused: type UNLINK in the confirm box, or tick dry run."
+            echo "## Killswitch: REFUSED" >> "$GITHUB_STEP_SUMMARY"
+            echo "Real run needs the word UNLINK. Nothing was done." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # Swaps the OIDC token for a 1-hour killswitch-sa token. gcloud is
+      # already on the runner image and picks the credentials up from here.
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.KILLSWITCH_SA }}
+      - name: Killswitch
+        env:
+          PROJECT: ${{ inputs.project }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          args=(--project "$PROJECT")
+          [ "$DRY_RUN" = "true" ] && args+=(--dry-run)
+          ./ops/scripts/killswitch.sh "${args[@]}"

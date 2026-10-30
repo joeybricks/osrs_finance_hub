@@ -21,7 +21,7 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 | --- | --- | --- | --- |
 | `plan-sa` | `terraform plan` on PRs | read both projects, the state bucket, BigQuery metadata, enabled APIs and Pub/Sub topics | write anything, read BigQuery rows, pull Pub/Sub messages, see the billing account or budget |
 | `deployer-sa` | `terraform apply` of `envs/prod` after merge | write `prod/` state (IAM condition), update state bucket settings, read BigQuery metadata, enabled APIs and Pub/Sub topics | IAM, enable APIs, billing, change projects or datasets, read BigQuery rows, touch `iam/` state |
-| `killswitch-sa` | unlink billing when over budget (OSRS-16) | `deleteBillingAssignment` on `osrs-infra` | re-link billing, anything else |
+| `killswitch-sa` | unlink billing when over budget (OSRS-16, button OSRS-17) | `deleteBillingAssignment` + `projects.get` on `osrs-infra` | re-link billing, anything else |
 
 Roles are hand-picked built-in roles where one is narrow enough, and custom
 roles (`tfStateBucketEditor`, `billingKillswitch`) where every built-in role

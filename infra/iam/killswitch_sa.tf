@@ -6,16 +6,19 @@
 # could re-link billing. This one can only switch billing off.
 # osrs-infra only: osrs-llm never has billing.
 #
-# If the OSRS-16 function needs to read the billing link before unlinking
-# (getBillingInfo needs resourcemanager.projects.get), add it here then.
+# resourcemanager.projects.get: the script (ops/scripts/killswitch.sh) reads
+# the billing link first (getBillingInfo needs it), so a dry run can say what
+# it would do and a second run is a no-op. It reads project metadata only:
+# name, number, labels. No IAM policy, no data in any service.
 
 resource "google_project_iam_custom_role" "billing_killswitch" {
   project     = var.infra_project_id
   role_id     = "billingKillswitch"
   title       = "Billing killswitch"
-  description = "Unlink billing from the project. Cannot link it again or do anything else."
+  description = "Read and unlink the project's billing link. Cannot link it again or do anything else."
   permissions = [
     "resourcemanager.projects.deleteBillingAssignment",
+    "resourcemanager.projects.get",
   ]
 
   depends_on = [google_project_service.iam]
