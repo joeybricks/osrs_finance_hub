@@ -24,17 +24,20 @@ resource "google_pubsub_topic" "budget_alerts" {
   depends_on = [google_project_service.pubsub]
 }
 
-# Pull subscription that keeps the last 7 days of budget messages, so they can
-# be read by hand: the synthetic test (ops/scripts/budget-alert-test.sh) and
-# checking that real budget messages are arriving. Nothing pulls it
-# automatically; messages just expire after 7 days. Free: storage for unacked
-# messages up to 7 days is not billed separately, and volume is tiny.
+# Pull subscription that keeps the last 24 hours of budget messages, so they
+# can be read by hand: the synthetic test (ops/scripts/budget-alert-test.sh)
+# and checking that real budget messages are arriving. Nothing pulls it
+# automatically; unread messages are dropped after 24 hours.
+#
+# Why 24 hours, not the 7-day default: Pub/Sub bills storage for unacked
+# messages kept longer than 24 hours. The budget publishes several times a
+# day, so a day's window always holds recent messages, and this stays free.
 resource "google_pubsub_subscription" "budget_alerts_audit" {
   project = google_project.infra.project_id
   name    = "budget-alerts-audit"
   topic   = google_pubsub_topic.budget_alerts.id
 
-  message_retention_duration = "604800s" # 7 days, the maximum
+  message_retention_duration = "86400s" # 24 hours (default 7 days, max 31)
   ack_deadline_seconds       = 60
 
   # Default is to delete a subscription after 31 days with no pulls. This one

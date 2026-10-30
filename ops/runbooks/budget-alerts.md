@@ -9,7 +9,7 @@ Cloud Billing account
      ├─ email to billing admins/users at 25/50/90/100% actual + 100% forecast
      │    └─ Gmail on your phone: push notification            (OSRS-15)
      └─ Pub/Sub topic budget-alerts, several times a day        (infra/envs/prod/pubsub.tf)
-          ├─ subscription budget-alerts-audit: 7 days of messages, read by hand
+          ├─ subscription budget-alerts-audit: last 24h of messages, read by hand
           └─ killswitch function (OSRS-16, not built yet)
 ```
 
