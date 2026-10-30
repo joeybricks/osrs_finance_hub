@@ -107,7 +107,7 @@ jobs:
         if: always()
         run: cat server.log || true
 
-  # Static checks only: no GCP login until OSRS-12 (Workload Identity Federation).
+  # Static checks only, no GCP login. The PR plan with GCP access is plan.yml.
   terraform:
     needs: changes
     if: needs.changes.outputs.infra == 'true'

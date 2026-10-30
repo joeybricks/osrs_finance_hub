@@ -6,3 +6,4 @@ ADR that supersedes the old one.
 | ADR | Title | Status |
 | --- | --- | --- |
 | [0001](0001-terraform-state-bucket-bootstrap.md) | Bootstrap the Terraform state bucket by script | Accepted |
+| [0002](0002-keyless-ci-auth-wif.md) | Keyless CI auth to GCP with Workload Identity Federation | Accepted |
