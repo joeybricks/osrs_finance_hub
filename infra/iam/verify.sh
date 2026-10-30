@@ -15,6 +15,12 @@
 # - It cannot target a single object, so it evaluates the deployer's
 #   prod/-only condition against the bucket name and always gets false. That
 #   condition is checked by reading the bucket policy instead (last section).
+#
+# Rate limit: Troubleshooter allows 15 requests a minute per project, and each
+# check() is one request. Without a gap, a run of 30+ checks gets 429
+# RESOURCE_EXHAUSTED part-way through. check() waits CHECK_DELAY seconds
+# (default 5) before every call after the first, so a full run takes ~3 min.
+# CHECK_DELAY=0 ./verify.sh skips the wait (expect 429s on long runs).
 set -uo pipefail
 
 PROJECT="osrs-infra"
@@ -28,6 +34,8 @@ PROJECT_RES="//cloudresourcemanager.googleapis.com/projects/${PROJECT}"
 BUCKET_RES="//storage.googleapis.com/projects/_/buckets/${BUCKET}"
 
 failures=0
+CHECK_DELAY="${CHECK_DELAY:-5}"
+troubleshoot_calls=0
 
 report() {  # report <PASS|FAIL> <who> <what> <where> <want> <got>
   [[ "$1" == FAIL ]] && failures=$((failures + 1))
@@ -37,6 +45,11 @@ report() {  # report <PASS|FAIL> <who> <what> <where> <want> <got>
 # check <ALLOW|DENY> <principal> <permission> <resource>
 check() {
   local expect="$1" who="$2" perm="$3" res="$4" state got
+  # Stay under 15 requests a minute (see header).
+  if (( troubleshoot_calls > 0 )); then
+    sleep "$CHECK_DELAY"
+  fi
+  troubleshoot_calls=$((troubleshoot_calls + 1))
   if ! state=$(gcloud policy-intelligence troubleshoot-policy iam "$res" \
       --principal-email="$who" --permission="$perm" \
       --billing-project="$PROJECT" \
