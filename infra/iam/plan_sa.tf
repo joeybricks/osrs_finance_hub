@@ -38,3 +38,20 @@ resource "google_storage_bucket_iam_member" "plan_state_bucket" {
   role   = "roles/storage.legacyBucketReader"
   member = local.plan_member
 }
+
+# See BigQuery datasets and table schemas (bigquery.tf in envs/prod), but not
+# read rows: metadataViewer has no bigquery.tables.getData, so CI never sees
+# billing data. Project-level because the dataset is created after this stack.
+resource "google_project_iam_member" "plan_bigquery_metadata" {
+  project = var.infra_project_id
+  role    = "roles/bigquery.metadataViewer"
+  member  = local.plan_member
+}
+
+# See which APIs are on, to refresh google_project_service in envs/prod.
+# Read only: cannot enable or disable anything.
+resource "google_project_iam_member" "plan_service_usage" {
+  project = var.infra_project_id
+  role    = "roles/serviceusage.serviceUsageViewer"
+  member  = local.plan_member
+}

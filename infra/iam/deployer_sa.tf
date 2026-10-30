@@ -63,3 +63,19 @@ resource "google_storage_bucket_iam_member" "deployer_state_bucket" {
   role   = google_project_iam_custom_role.tfstate_bucket_editor.id
   member = local.deployer_member
 }
+
+# Read-only, so a future CI apply can refresh the billing export dataset and
+# the APIs declared in envs/prod. No BigQuery write role on purpose:
+# bigquery.datasets.update can also edit the dataset's access list, i.e. grant
+# access. Dataset changes are applied locally by an Owner, like project changes.
+resource "google_project_iam_member" "deployer_bigquery_metadata" {
+  project = var.infra_project_id
+  role    = "roles/bigquery.metadataViewer"
+  member  = local.deployer_member
+}
+
+resource "google_project_iam_member" "deployer_service_usage" {
+  project = var.infra_project_id
+  role    = "roles/serviceusage.serviceUsageViewer"
+  member  = local.deployer_member
+}
