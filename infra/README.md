@@ -25,7 +25,24 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 Roles are hand-picked built-in roles where one is narrow enough, and custom
 roles (`tfStateBucketEditor`, `billingKillswitch`) where every built-in role
 also allows something dangerous. No service account keys: CI uses Workload
-Identity Federation (OSRS-12).
+Identity Federation (below).
+
+## CI sign-in: Workload Identity Federation (`iam/wif.tf`, ADR 0002)
+
+```
+GitHub job (id-token: write) --OIDC token--> STS: provider accepts only this repo (by ID)
+  --federated token--> IAM Credentials: is the run bound to this SA? --1h token--> terraform
+```
+
+| Account | Runs that may use it |
+| --- | --- |
+| `plan-sa` | any `pull_request` run (`plan.yml`) |
+| `deployer-sa` | jobs in GitHub Environment `production` on `master` |
+| `killswitch-sa` | jobs in GitHub Environment `killswitch` on `master` |
+
+The org policy `iam.disableServiceAccountKeyCreation` blocks key creation in
+both projects; `verify.sh` checks it and that no account has a key.
+
 
 `iam/` is applied locally by a project Owner, never by CI. Merge first, then
 apply from an up-to-date `develop` so the cloud matches the branch:

@@ -1,0 +1,62 @@
+name: Terraform plan
+
+# Shows what a PR would change in envs/prod, signed in to GCP as read-only
+# plan-sa through Workload Identity Federation (no keys; infra/iam/wif.tf).
+# Not a required check, so a paths filter on the trigger is safe here. If it
+# ever becomes required, move the filter into a job (see ci.yml `changes`).
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - ".github/workflows/plan.yml"
+
+concurrency:
+  group: plan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write  # lets the job ask GitHub for an OIDC token; nothing else
+
+env:
+  WIF_PROVIDER: projects/364165303320/locations/global/workloadIdentityPools/github/providers/github-actions
+  PLAN_SA: plan-sa@osrs-infra.iam.gserviceaccount.com
+
+jobs:
+  plan:
+    # Fork PRs get no OIDC token; skip rather than fail.
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: infra/envs/prod
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # Swaps the OIDC token for a 1-hour plan-sa token and writes a credentials
+      # config (pointers, not a key) that Terraform finds via ADC.
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.PLAN_SA }}
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+      - name: terraform init
+        run: terraform init -input=false
+      # -lock=false: plan-sa cannot write the .tflock object, and plan never
+      # writes state, so no lock is needed.
+      - name: terraform plan
+        run: terraform plan -lock=false -input=false -no-color | tee plan.txt
+      - name: Plan to job summary
+        if: always()
+        run: |
+          {
+            echo "## terraform plan: envs/prod"
+            echo '```'
+            tail -c 60000 plan.txt 2>/dev/null || echo "No plan output."
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

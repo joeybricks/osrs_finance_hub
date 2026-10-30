@@ -105,6 +105,55 @@ else
   report FAIL deployer-sa "read bucket IAM policy" "$BUCKET" ok "${policy##*ERROR: }"
 fi
 
+echo "== No service account keys (OSRS-12)"
+# Effective policy = org setting after inheritance and any project override.
+# The Resource Manager (v1) command, because `gcloud org-policies` bills quota
+# to the project and needs orgpolicy.googleapis.com on in each one.
+for proj in "$PROJECT" osrs-llm; do
+  enforced=$(gcloud resource-manager org-policies describe \
+    iam.disableServiceAccountKeyCreation --project="$proj" --effective \
+    --format='value(booleanPolicy.enforced)' </dev/null 2>&1)
+  mark=PASS; [[ "$enforced" == True ]] || mark=FAIL
+  report "$mark" org-policy "disableServiceAccountKeyCreation enforced" "$proj" True "$enforced"
+done
+for sa in "$PLAN" "$DEPLOYER" "$KILLSWITCH"; do
+  keys=$(gcloud iam service-accounts keys list --iam-account="$sa" \
+    --managed-by=user --format='value(name)' 2>&1 | grep -c . || true)
+  mark=PASS; [[ "$keys" == 0 ]] || mark=FAIL
+  report "$mark" "${sa%%@*}" "user-managed keys" "$PROJECT" 0 "$keys"
+done
+
+echo "== Workload Identity Federation: who may act as each account (OSRS-12)"
+POOL=$(gcloud iam workload-identity-pools describe github --project="$PROJECT" \
+  --location=global --format='value(name)' 2>&1)
+SET="principalSet://iam.googleapis.com/${POOL}"
+condition=$(gcloud iam workload-identity-pools providers describe github-actions \
+  --project="$PROJECT" --location=global --workload-identity-pool=github \
+  --format='value(attributeCondition)' 2>&1)
+want_condition="assertion.repository_id == '1438251307' && assertion.repository_owner_id == '84076451'"
+mark=PASS; [[ "$condition" == "$want_condition" ]] || mark=FAIL
+report "$mark" github-actions "provider accepts only this repo + owner (by ID)" github yes "$([[ $mark == PASS ]] && echo yes || echo "$condition")"
+
+# wif_check <sa> <expected single member of roles/iam.workloadIdentityUser>
+wif_check() {
+  local sa="$1" want="$2" got
+  got=$(gcloud iam service-accounts get-iam-policy "$sa" --format=json 2>&1 | python3 -c '
+import json, sys
+try:
+    bindings = json.load(sys.stdin).get("bindings", [])
+except ValueError:
+    sys.exit("unreadable policy")
+members = [m for b in bindings if b["role"] == "roles/iam.workloadIdentityUser" for m in b["members"]]
+print(" ".join(members) or "none")
+')
+  local mark=PASS
+  [[ "$got" == "$want" ]] || mark=FAIL
+  report "$mark" "${sa%%@*}" "workloadIdentityUser = ${want##*/attribute.}" "$PROJECT" yes "$([[ $mark == PASS ]] && echo yes || echo "$got")"
+}
+wif_check "$PLAN" "${SET}/attribute.event_name/pull_request"
+wif_check "$DEPLOYER" "${SET}/attribute.env_on_master/production"
+wif_check "$KILLSWITCH" "${SET}/attribute.env_on_master/killswitch"
+
 echo
 echo "Note: ALLOW verdicts cover allow policies; deny policies were not readable (none exist)."
 if (( failures > 0 )); then

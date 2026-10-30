@@ -32,3 +32,20 @@ resource "google_project_service" "policytroubleshooter" {
   service            = "policytroubleshooter.googleapis.com"
   disable_on_destroy = false
 }
+
+# Security Token Service: swaps GitHub's OIDC token for a federated Google
+# token (Workload Identity Federation, wif.tf). Free.
+resource "google_project_service" "sts" {
+  project            = var.infra_project_id
+  service            = "sts.googleapis.com"
+  disable_on_destroy = false
+}
+
+# IAM Credentials: turns the federated token into a short-lived token for
+# plan-sa / deployer-sa / killswitch-sa (impersonation). Already on; declared
+# here so Terraform tracks it. Free.
+resource "google_project_service" "iamcredentials" {
+  project            = var.infra_project_id
+  service            = "iamcredentials.googleapis.com"
+  disable_on_destroy = false
+}
