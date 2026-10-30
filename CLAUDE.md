@@ -82,6 +82,7 @@ Notes are written for Claude to resume from and for Joe to revise from. Keep the
 - **Cost**: budget is £2. Stay inside free tiers. `osrs-infra` has billing; `osrs-llm` has none. Never create billable resources outside Terraform. Flag anything that could cost money before doing it.
 - **Secrets**: repo is public. No keys in code, config, logs or notes. Secrets go in Secret Manager. Auth to GCP via Workload Identity Federation only, no service account key files.
 - **Infra changes** go through Terraform and CI, not click-ops. Run `terraform plan` and show the output before any apply.
+- **Turning on APIs/services is Joe's step.** Claude declares them in Terraform (`google_project_service`) and shows the plan; Joe runs the apply that enables them. Claude never enables a service itself (no `gcloud services enable`, no apply that includes one).
 - **Data and LLM**: deterministic entity linking comes before any LLM call. Prompts are versioned in `prompts/`. Changes to prompts or extraction need an eval run.
 - Pin GitHub Actions to SHAs (the repo requires it). Third-party actions must be on the repo's Actions allowlist (Settings → Actions → General) before a workflow can use them; otherwise the run fails with `startup_failure` and no logs.
 - `master` and `develop` are protected by the `protect-master` ruleset: PR only, no force push or deletion, linear history, and `lint`, `test`, `gitleaks` must pass. Secret scanning with push protection, Dependabot alerts and security updates are on; the default workflow token is read-only.
@@ -97,6 +98,7 @@ Notes are written for Claude to resume from and for Joe to revise from. Keep the
 - Keep changes small and one epic story at a time. Ask before expanding scope.
 - If something contradicts the epic plan or an ADR, say so rather than silently deviating.
 - Commit sensibly and frequently: one logical change per commit with a clear message, but don't over-commit (no commits for trivial edits or half-finished work).
+- **Stop before every commit.** Leave the changes uncommitted, summarise what has been done so far on the ticket and what this commit will contain, then end the turn so Joe can review the diff in VS Code Source Control. Commit only after he says go.
 - Whilst working, stop and talk about features, tools and services that are being used so I can research them during the process
 
 # Working with Claude on Jira Tickets

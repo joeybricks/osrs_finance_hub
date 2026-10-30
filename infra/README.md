@@ -10,19 +10,42 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 | --- | --- |
 | `bootstrap/` | One-off script that creates the state bucket `gs://osrs-infra-tfstate` |
 | `envs/prod/` | Root module for the prod environment; state under `prod/` in the bucket |
+| `iam/` | Service accounts and their roles (OSRS-11); state under `iam/`. Applied locally by an Owner, never by CI |
 | `modules/` | Reusable modules (none yet) |
 | `.tflint.hcl` | TFLint rules: Terraform recommended preset + Google ruleset |
+
+## Service accounts (`iam/`)
+
+| Account | Job | Can | Cannot |
+| --- | --- | --- | --- |
+| `plan-sa` | `terraform plan` on PRs | read both projects and the state bucket | write anything |
+| `deployer-sa` | `terraform apply` of `envs/prod` after merge | write `prod/` state (IAM condition), update state bucket settings | IAM, enable APIs, billing, change projects, touch `iam/` state |
+| `killswitch-sa` | unlink billing when over budget (OSRS-16) | `deleteBillingAssignment` on `osrs-infra` | re-link billing, anything else |
+
+Roles are hand-picked built-in roles where one is narrow enough, and custom
+roles (`tfStateBucketEditor`, `billingKillswitch`) where every built-in role
+also allows something dangerous. No service account keys: CI uses Workload
+Identity Federation (OSRS-12).
+
+`iam/` is applied locally by a project Owner, never by CI. Merge first, then
+apply from an up-to-date `develop` so the cloud matches the branch:
+
+```bash
+git checkout develop && git pull
+cd infra/iam && terraform plan && terraform apply
+./verify.sh      # Policy Troubleshooter: every check must PASS
+```
 
 ## Local checks (same as CI)
 
 ```bash
 cd infra
 terraform fmt -check -recursive
-(cd envs/prod && terraform init && terraform validate)
+for root in envs/prod iam; do (cd $root && terraform init && terraform validate); done
 tflint --init --config "$(pwd)/.tflint.hcl"
 tflint --recursive --config "$(pwd)/.tflint.hcl"
 ```
 
-Provider versions are fixed by `envs/prod/.terraform.lock.hcl` (darwin_arm64 and
+Provider versions are fixed by each root's `.terraform.lock.hcl` (darwin_arm64 and
 linux_amd64 hashes). After changing a provider version run
 `terraform providers lock -platform=darwin_arm64 -platform=linux_amd64`.
