@@ -14,6 +14,28 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 | `modules/` | Reusable modules (none yet) |
 | `.tflint.hcl` | TFLint rules: Terraform recommended preset + Google ruleset |
 
+## Service accounts (`iam/`)
+
+| Account | Job | Can | Cannot |
+| --- | --- | --- | --- |
+| `plan-sa` | `terraform plan` on PRs | read both projects and the state bucket | write anything |
+| `deployer-sa` | `terraform apply` of `envs/prod` after merge | write `prod/` state (IAM condition), update state bucket settings | IAM, enable APIs, billing, change projects, touch `iam/` state |
+| `killswitch-sa` | unlink billing when over budget (OSRS-16) | `deleteBillingAssignment` on `osrs-infra` | re-link billing, anything else |
+
+Roles are hand-picked built-in roles where one is narrow enough, and custom
+roles (`tfStateBucketEditor`, `billingKillswitch`) where every built-in role
+also allows something dangerous. No service account keys: CI uses Workload
+Identity Federation (OSRS-12).
+
+`iam/` is applied locally by a project Owner, never by CI. Merge first, then
+apply from an up-to-date `develop` so the cloud matches the branch:
+
+```bash
+git checkout develop && git pull
+cd infra/iam && terraform plan && terraform apply
+./verify.sh      # Policy Troubleshooter: every check must PASS
+```
+
 ## Local checks (same as CI)
 
 ```bash

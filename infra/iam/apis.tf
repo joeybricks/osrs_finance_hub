@@ -24,3 +24,11 @@ resource "google_project_service" "cloudbilling" {
   service            = "cloudbilling.googleapis.com"
   disable_on_destroy = false
 }
+
+# Policy Troubleshooter: verify.sh asks it whether each account can or cannot
+# do a given action. Read-only, free.
+resource "google_project_service" "policytroubleshooter" {
+  project            = var.infra_project_id
+  service            = "policytroubleshooter.googleapis.com"
+  disable_on_destroy = false
+}
