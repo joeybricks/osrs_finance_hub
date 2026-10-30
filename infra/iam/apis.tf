@@ -16,3 +16,11 @@ resource "google_project_service" "cloudresourcemanager" {
   service            = "cloudresourcemanager.googleapis.com"
   disable_on_destroy = false
 }
+
+# Cloud Billing API: the killswitch unlinks billing through it (OSRS-16), and
+# refreshing google_project reads the billing link through it.
+resource "google_project_service" "cloudbilling" {
+  project            = var.infra_project_id
+  service            = "cloudbilling.googleapis.com"
+  disable_on_destroy = false
+}
