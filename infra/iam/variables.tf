@@ -21,3 +21,18 @@ variable "state_bucket" {
   type        = string
   default     = "osrs-infra-tfstate"
 }
+
+# Numeric IDs, not names: a renamed, deleted-and-recreated or look-alike repo
+# gets a new ID, so it can never match. Public values, not secrets.
+# Find them with: gh api repos/OWNER/REPO --jq '.id, .owner.id'
+variable "github_repository_id" {
+  description = "GitHub repository ID of joeybricks/osrs_finance_hub."
+  type        = string
+  default     = "1438251307"
+}
+
+variable "github_owner_id" {
+  description = "GitHub user ID of the repository owner (joeybricks)."
+  type        = string
+  default     = "84076451"
+}
