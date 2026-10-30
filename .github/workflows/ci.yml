@@ -126,7 +126,7 @@ jobs:
         run: terraform fmt -check -recursive -diff
       - name: terraform validate
         run: |
-          for root in envs/prod iam; do
+          for root in envs/prod iam billing; do
             echo "::group::$root"
             terraform -chdir="$root" init -backend=false -input=false
             terraform -chdir="$root" validate
