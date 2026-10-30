@@ -106,9 +106,13 @@ else
 fi
 
 echo "== No service account keys (OSRS-12)"
+# Effective policy = org setting after inheritance and any project override.
+# The Resource Manager (v1) command, because `gcloud org-policies` bills quota
+# to the project and needs orgpolicy.googleapis.com on in each one.
 for proj in "$PROJECT" osrs-llm; do
-  enforced=$(gcloud org-policies describe iam.disableServiceAccountKeyCreation \
-    --project="$proj" --effective --format='value(spec.rules[0].enforce)' 2>&1)
+  enforced=$(gcloud resource-manager org-policies describe \
+    iam.disableServiceAccountKeyCreation --project="$proj" --effective \
+    --format='value(booleanPolicy.enforced)' </dev/null 2>&1)
   mark=PASS; [[ "$enforced" == True ]] || mark=FAIL
   report "$mark" org-policy "disableServiceAccountKeyCreation enforced" "$proj" True "$enforced"
 done
