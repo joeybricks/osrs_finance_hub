@@ -55,3 +55,12 @@ resource "google_project_iam_member" "plan_service_usage" {
   role    = "roles/serviceusage.serviceUsageViewer"
   member  = local.plan_member
 }
+
+# Read the budget alerts topic (envs/prod pubsub.tf). pubsub.viewer is
+# topics.get/list and subscriptions.get/list only: no publish, no pull of
+# messages, no IAM reads.
+resource "google_project_iam_member" "plan_pubsub_viewer" {
+  project = var.infra_project_id
+  role    = "roles/pubsub.viewer"
+  member  = local.plan_member
+}

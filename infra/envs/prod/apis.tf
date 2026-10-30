@@ -10,3 +10,21 @@ resource "google_project_service" "bigquery" {
   service            = "bigquery.googleapis.com"
   disable_on_destroy = false
 }
+
+# Pub/Sub: the budget publishes its status to a topic (pubsub.tf), which the
+# killswitch (OSRS-16) and phone alerts (OSRS-15) read. Free tier: 10 GiB/month;
+# budget messages are a few KB a day.
+resource "google_project_service" "pubsub" {
+  project            = google_project.infra.project_id
+  service            = "pubsub.googleapis.com"
+  disable_on_destroy = false
+}
+
+# Cloud Billing Budget API: creates and reads google_billing_budget (budget.tf).
+# Free. Calls bill quota to this project, so it must be on here even though the
+# budget itself lives on the billing account.
+resource "google_project_service" "billingbudgets" {
+  project            = google_project.infra.project_id
+  service            = "billingbudgets.googleapis.com"
+  disable_on_destroy = false
+}

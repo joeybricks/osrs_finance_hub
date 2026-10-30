@@ -32,6 +32,10 @@ KILLSWITCH="killswitch-sa@${SA_DOMAIN}"
 
 PROJECT_RES="//cloudresourcemanager.googleapis.com/projects/${PROJECT}"
 BUCKET_RES="//storage.googleapis.com/projects/_/buckets/${BUCKET}"
+# Looked up at run time so the billing account ID stays out of the repo.
+# Empty if billing is unlinked (killswitch); those checks then report ERROR.
+BILLING_RES="//cloudbilling.googleapis.com/$(gcloud billing projects describe "$PROJECT" \
+  --format='value(billingAccountName)' 2>/dev/null)"
 
 failures=0
 CHECK_DELAY="${CHECK_DELAY:-5}"
@@ -63,7 +67,9 @@ check() {
   esac
   local mark=PASS
   [[ "$got" == "$expect" ]] || mark=FAIL
-  report "$mark" "${who%%@*}" "$perm" "${res##*/}" "$expect" "$got"
+  local where="${res##*/}"
+  [[ "$res" == //cloudbilling.googleapis.com/* ]] && where=billing-account  # keep the ID out of output
+  report "$mark" "${who%%@*}" "$perm" "$where" "$expect" "$got"
 }
 
 echo "== plan-sa: read only"
@@ -80,6 +86,10 @@ check ALLOW "$PLAN" serviceusage.services.get "$PROJECT_RES"
 check DENY  "$PLAN" bigquery.tables.getData "$PROJECT_RES"
 check DENY  "$PLAN" bigquery.datasets.update "$PROJECT_RES"
 check DENY  "$PLAN" serviceusage.services.enable "$PROJECT_RES"
+check ALLOW "$PLAN" pubsub.topics.get "$PROJECT_RES"
+check DENY  "$PLAN" pubsub.topics.publish "$PROJECT_RES"
+check DENY  "$PLAN" pubsub.subscriptions.consume "$PROJECT_RES"
+check DENY  "$PLAN" billing.budgets.get "$BILLING_RES"
 
 echo "== deployer-sa: prod state and bucket settings only"
 check ALLOW "$DEPLOYER" resourcemanager.projects.get "$PROJECT_RES"
@@ -95,6 +105,9 @@ check ALLOW "$DEPLOYER" bigquery.datasets.get "$PROJECT_RES"
 check DENY  "$DEPLOYER" bigquery.tables.getData "$PROJECT_RES"
 check DENY  "$DEPLOYER" bigquery.datasets.create "$PROJECT_RES"
 check DENY  "$DEPLOYER" bigquery.datasets.update "$PROJECT_RES"
+check ALLOW "$DEPLOYER" pubsub.topics.get "$PROJECT_RES"
+check DENY  "$DEPLOYER" pubsub.topics.publish "$PROJECT_RES"
+check DENY  "$DEPLOYER" billing.budgets.update "$BILLING_RES"
 
 echo "== killswitch-sa: unlink billing only"
 check ALLOW "$KILLSWITCH" resourcemanager.projects.deleteBillingAssignment "$PROJECT_RES"

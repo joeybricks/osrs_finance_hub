@@ -79,3 +79,11 @@ resource "google_project_iam_member" "deployer_service_usage" {
   role    = "roles/serviceusage.serviceUsageViewer"
   member  = local.deployer_member
 }
+
+# Read the budget alerts topic, as for plan-sa. Topic changes are applied
+# locally by an Owner for now: no Pub/Sub write role yet.
+resource "google_project_iam_member" "deployer_pubsub_viewer" {
+  project = var.infra_project_id
+  role    = "roles/pubsub.viewer"
+  member  = local.deployer_member
+}
