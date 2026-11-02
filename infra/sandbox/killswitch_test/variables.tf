@@ -2,6 +2,8 @@ variable "test_project_id" {
   description = "Throwaway project for the live killswitch test. Must match ALLOWED_PROJECTS in ops/scripts/killswitch.sh and the workflow's project choices."
   type        = string
   # Dated so a rerun can pick a new one: a deleted project ID can't be reused.
+  # 1102 was used and destroyed on 2026-11-02. Change it in all four places
+  # listed in the runbook ("Running the test again").
   default = "osrs-killswitch-test-1102"
 }
 
