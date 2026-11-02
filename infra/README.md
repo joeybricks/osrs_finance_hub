@@ -12,7 +12,7 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 | `envs/prod/` | Root module for the prod environment; state under `prod/` in the bucket |
 | `iam/` | Service accounts and their roles (OSRS-11); state under `iam/`. Applied locally by an Owner, never by CI |
 | `billing/` | Budget on the billing account (OSRS-14); state under `billing/`. Applied locally by the billing admin, never by CI |
-| `sandbox/killswitch_test/` | Throwaway project for the live killswitch test (OSRS-18); state under `sandbox/killswitch-test/`. Applied and destroyed locally by Joe, never by CI |
+| `sandbox/killswitch_test/` | Throwaway project for the live killswitch test (OSRS-18); state under `sandbox/killswitch-test/`. Applied and destroyed locally by Joe, never by CI. Kept for reruns; empty between tests |
 | `modules/` | Reusable modules (none yet) |
 | `.tflint.hcl` | TFLint rules: Terraform recommended preset + Google ruleset |
 
