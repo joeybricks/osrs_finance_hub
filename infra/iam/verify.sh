@@ -119,6 +119,19 @@ check DENY  "$KILLSWITCH" resourcemanager.projects.setIamPolicy "$PROJECT_RES"
 check DENY  "$KILLSWITCH" storage.objects.get "$BUCKET_RES"
 check DENY  "$KILLSWITCH" storage.buckets.update "$BUCKET_RES"
 
+# Throwaway project for the live killswitch test (OSRS-18). Skipped once the
+# project is destroyed, so this script still passes afterwards.
+TEST_PROJECT="osrs-killswitch-test-1102"
+if gcloud projects describe "$TEST_PROJECT" --format='value(lifecycleState)' 2>/dev/null | grep -q ACTIVE; then
+  TEST_RES="//cloudresourcemanager.googleapis.com/projects/${TEST_PROJECT}"
+  echo "== killswitch-sa: read and unlink billing only, on ${TEST_PROJECT}"
+  check ALLOW "$KILLSWITCH" resourcemanager.projects.deleteBillingAssignment "$TEST_RES"
+  check ALLOW "$KILLSWITCH" resourcemanager.projects.get "$TEST_RES"
+  check DENY  "$KILLSWITCH" resourcemanager.projects.createBillingAssignment "$TEST_RES"
+  check DENY  "$KILLSWITCH" resourcemanager.projects.getIamPolicy "$TEST_RES"
+  check DENY  "$KILLSWITCH" storage.objects.get "$TEST_RES"
+fi
+
 echo "== deployer-sa: state writes limited to prod/ (bucket policy)"
 want_cond="resource.name.startsWith(\"projects/_/buckets/${BUCKET}/objects/prod/\")"
 if policy=$(gcloud storage buckets get-iam-policy "gs://${BUCKET}" --format=json 2>&1); then

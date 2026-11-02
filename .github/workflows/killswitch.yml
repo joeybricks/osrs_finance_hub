@@ -19,6 +19,8 @@ on:
         type: choice
         options:
           - osrs-infra
+          # Throwaway project for the live test (OSRS-18); remove once destroyed.
+          - osrs-killswitch-test-1102
         default: osrs-infra
       dry_run:
         description: Dry run (only report what would happen)
