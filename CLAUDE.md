@@ -6,21 +6,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 OSRS Finance Hub: a local FastAPI web app that reads the OSRS Wiki real-time prices API (`prices.runescape.wiki`) and ranks Grand Exchange flips. No database, no build step for the frontend. `README.md` is the detailed spec for the maths, UI behaviour and thresholds; read the relevant section before changing a feature.
 
+## Plan
+
+OSRS Grand Exchange flipping app, grown into a low-cost, multi-cloud learning project: price and text ingestion, LLM signal extraction (Gemma), evals, scoring/backtesting, and an agent layer. The aim is cloud solution-design experience as much as the app itself.
+
 ## Commands
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"                     # app + pytest, pytest-asyncio
+uv sync                                     # .venv from uv.lock: app + pytest, ruff, actionlint, pre-commit
+uv run pre-commit install                   # once per clone
 
-osrs_finance_hub serve --contact "you@example.com" --no-browser   # http://127.0.0.1:8080/
-osrs_finance_hub serve --verbose                  # debug logging; API docs at /api/docs
+uv run osrs_finance_hub serve --contact "you@example.com" --no-browser   # http://127.0.0.1:8080/
+uv run osrs_finance_hub serve --verbose     # debug logging; API docs at /api/docs
 
-pytest                                      # whole suite (asyncio_mode = auto)
-pytest tests/test_flips.py                  # one file
-pytest tests/test_flips.py -k ge_tax        # tests matching a name
+uv run pytest app                           # whole suite (asyncio_mode = auto)
+uv run pytest app/tests/test_flips.py       # one file
+uv run pytest app/tests/test_flips.py -k ge_tax    # tests matching a name
+
+uv run ruff check                           # lint (config in root pyproject.toml)
+uv run pre-commit run --all-files           # every hook over the whole repo
 ```
 
-No linter or formatter is configured.
+Packages are managed with uv as a workspace: root `pyproject.toml` (virtual root, repo-wide dev tools, Ruff config) with `app/` as a member. Add deps with `uv add --package osrs_finance_hub <name>`; never `pip install`.
+
+All app code, tests and `pyproject.toml` live under `app/`; module paths below are relative to `app/osrs_finance_hub/`.
+
+Ruff is the linter (rules in root `pyproject.toml`; `set_data.py` is exempt from line length). No formatter is enforced yet. CI (`.github/workflows/ci.yml`) runs ruff, pytest, actionlint, gitleaks and a launch smoke test.
 
 ## Architecture
 
@@ -43,3 +54,103 @@ Data flows one way: wiki API → `PriceCache` (memory) → `flips.py` (pure math
 - **Aggression is measured against the post-tax margin**, not the raw spread (see README "Suggested prices").
 - Unrated items are "unknown", not "safe"; filters must not treat them as safe.
 - `app.js` holds back re-rendering live-trade cards while the user is typing in one (`isEditingInside`, `pendingPinnedRender`); keep this when changing the refresh path.
+
+
+## Session protocol (important)
+Work happens across many short sessions. `work_so_far/` is the memory between them.
+
+**Start of session**
+1. Read `work_so_far/status.md` (current epic, what's next, open issues).
+2. Skim the most recent session notes in `work_so_far/`.
+3. State in one or two lines where we are and what you propose to do. Do not re-plan finished work.
+
+**End of session** (or when asked)
+1. Write `work_so_far/YYYY-MM-DD-<topic>.md` with these sections:
+   - **Done**: what changed and why
+   - **Issues and fixes**: problems hit, root cause, how they were solved
+   - **Moving forward**: open questions, trade-offs, next steps
+   - **Learned**: the concept or gotcha worth remembering
+2. Update `work_so_far/status.md` (keep it to about 20 lines).
+3. Major decisions get an ADR, not just a session note.
+
+Notes are written for Claude to resume from and for Joe to revise from. Keep them short, plain and specific.
+
+## Layout
+`app/` `src/` `infra/` (Terraform) `evals/` `ops/` `prompts/` (versioned) `work_so_far/`
+
+## Hard rules
+- **Cost**: budget is £2. Stay inside free tiers. `osrs-infra` has billing; `osrs-llm` has none. Never create billable resources outside Terraform. Flag anything that could cost money before doing it.
+- **Secrets**: repo is public. No keys in code, config, logs or notes. Secrets go in Secret Manager. Auth to GCP via Workload Identity Federation only, no service account key files.
+- **Infra changes** go through Terraform and CI, not click-ops. Run `terraform plan` and show the output before any apply.
+- **Turning on APIs/services is Joe's step.** Claude declares them in Terraform (`google_project_service`) and shows the plan; Joe runs the apply that enables them. Claude never enables a service itself (no `gcloud services enable`, no apply that includes one).
+- **Data and LLM**: deterministic entity linking comes before any LLM call. Prompts are versioned in `prompts/`. Changes to prompts or extraction need an eval run.
+- Pin GitHub Actions to SHAs (the repo requires it). Third-party actions must be on the repo's Actions allowlist (Settings → Actions → General) before a workflow can use them; otherwise the run fails with `startup_failure` and no logs.
+- `master` and `develop` are protected by the `protect-master` ruleset: PR only, no force push or deletion, linear history, and `lint`, `test`, `gitleaks` must pass. Secret scanning with push protection, Dependabot alerts and security updates are on; the default workflow token is read-only.
+
+## Tickets and decisions
+- Joe assigns work as tickets. Work through the assigned ticket; don't pick up other stories or epics unprompted.
+- Claude may suggest structural changes (architecture, repo layout, service choices, sequencing). Raise them briefly with the reasoning, then wait.
+- Joe's decision is final. If he declines a suggestion, proceed his way without relitigating, and record the decision in the session note.
+
+## Working style
+- Joe is an experienced data/ML engineer, but is learning cloud design here. Joe is self taught in many areas, so help him gain technical depth and terminologgy/service name understanding. Explain the *why* behind service choices and trade-offs, briefly.
+- Prefer a diagram or pseudocode when introducing a new concept.
+- Keep changes small and one epic story at a time. Ask before expanding scope.
+- If something contradicts the epic plan or an ADR, say so rather than silently deviating.
+- Commit sensibly and frequently: one logical change per commit with a clear message, but don't over-commit (no commits for trivial edits or half-finished work).
+- **Stop before every commit.** Leave the changes uncommitted, summarise what has been done so far on the ticket and what this commit will contain, then end the turn so Joe can review the diff in VS Code Source Control. Commit only after he says go.
+- Whilst working, stop and talk about features, tools and services that are being used so I can research them during the process
+
+# Working with Claude on Jira Tickets
+
+## Branching
+
+- Always branch from `develop`.
+- Branch name format: `<branch_type>-<ticket_number>-<description_of_task>`
+  - Lowercase only.
+  - Words in the description are separated by underscores.
+  - Keep the description short; drop filler words like "and" or "the".
+
+| Ticket | Ticket name | Branch name |
+|--------|-------------|-------------|
+| 004 | Creating SQL DB | `feature-004-creating_sql_db` |
+| 504 | Removing Legacy Code and Clearing Old Tests | `chore-504-removing_legacy_code_clean_old_tests` |
+
+### Multiple tickets on one branch
+
+If Claude is asked to work on several tickets at once, join the ticket numbers with a hyphen:
+
+`feature-004-504-short_description_of_combined_work`
+
+## Pull Requests
+
+Use this format for every PR.
+
+```markdown
+## Title
+<Ticket number(s)> short summary of the change
+
+## Purpose of PR
+Why this change exists and which problem or ticket it addresses.
+
+## What has been done
+- Concise list of the changes made
+
+## Future thoughts
+- Follow-up work, known limitations, or ideas for later
+```
+
+## GitHub Actions guardrails
+
+Public repo: standard GitHub-hosted runners are free and unmetered. Larger runners still bill, and the $0 spending limit stays on as a backstop. Runaway workflows are still the main risk (noise, queueing, and minutes if the repo ever goes private), so every workflow must follow these rules:
+
+| Rule | Why |
+|---|---|
+| `timeout-minutes` on every job (≤10 unless justified) | Default is 6 h; one hung job can burn 360 min |
+| `concurrency` with `cancel-in-progress: true` (false for `tf-apply`) | Rapid pushes only run the latest commit; applies queue, never abort |
+| `paths:` filters on CI and evals | Skip runs when irrelevant files change. For workflows whose jobs are **required checks**, filter inside the workflow (a `changes` job + `if:`), not on the `pull_request` trigger: a workflow that never starts never reports, so the PR can't merge. Skipped jobs count as passing. |
+| `@claude` triggers only on explicit mentions, with a job timeout | App tokens can trigger other workflows, so loops are possible |
+| No new `schedule:` crons without approval | Frequent crons are the fastest way to exhaust minutes |
+| Prefer `GITHUB_TOKEN` over PATs for commits | Commits made with it don't trigger further workflows |
+
+Enforced by `ci/check_workflows.py` (fails PRs missing timeouts or adding unapproved crons). Usage is checked in the daily cost digest, with a GitHub budget alert at 50% and 80%.

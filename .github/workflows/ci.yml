@@ -1,0 +1,147 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, master]
+    paths:
+      - "app/**"
+      - "src/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".python-version"
+      - "infra/**"
+      - ".github/workflows/**"
+  # No paths filter on PRs: lint and test are required checks, and a workflow
+  # that never starts never reports, which blocks the PR forever. The
+  # `changes` job does the filtering instead; skipped jobs count as passing.
+  pull_request:
+
+# Only the newest run per branch matters; a new push cancels the old one.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      code: ${{ steps.diff.outputs.code }}
+      infra: ${{ steps.diff.outputs.infra }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 2  # PRs check out a merge commit; HEAD^1 is the base
+      - id: diff
+        name: Did code or infra change?
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          # Pushes are already filtered by `paths:` above.
+          if [ "$EVENT" != "pull_request" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+            echo "infra=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          files=$(git diff --name-only HEAD^1 HEAD)
+          echo "$files"
+          if echo "$files" | grep -qE '^(app/|src/|pyproject\.toml$|uv\.lock$|\.python-version$|\.github/workflows/)'; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+          if echo "$files" | grep -qE '^(infra/|\.github/workflows/)'; then
+            echo "infra=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "infra=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  lint:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          enable-cache: true
+      # --locked fails if uv.lock is out of date with pyproject.toml.
+      - run: uv sync --locked
+      - name: Ruff
+        run: uv run ruff check --output-format=github
+      - name: actionlint
+        run: uv run actionlint
+
+  test:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2  # v10.3.3
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: pytest
+        run: uv run pytest app
+      # Start the real server and check it answers. Startup primes the cache
+      # with one call each to /mapping, /latest, /1h and /5m (with our
+      # User-Agent); a wiki outage only marks data stale, it does not fail this.
+      - name: Launch smoke test
+        env:
+          CONTACT: github.com/${{ github.repository }}
+        run: |
+          uv run osrs_finance_hub serve --no-browser --contact "$CONTACT" > server.log 2>&1 &
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8080/api/status > /dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8080/api/status
+          curl -fsS -o /dev/null http://127.0.0.1:8080/
+          curl -fsS -o /dev/null http://127.0.0.1:8080/static/app.js
+      - name: Server log
+        if: always()
+        run: cat server.log || true
+
+  # Static checks only, no GCP login. The PR plan with GCP access is plan.yml.
+  terraform:
+    needs: changes
+    if: needs.changes.outputs.infra == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e  # v4.0.1
+        with:
+          terraform_version: 1.17.1
+          terraform_wrapper: false
+      - name: terraform fmt
+        run: terraform fmt -check -recursive -diff
+      - name: terraform validate
+        run: |
+          for root in envs/prod iam billing; do
+            echo "::group::$root"
+            terraform -chdir="$root" init -backend=false -input=false
+            terraform -chdir="$root" validate
+            echo "::endgroup::"
+          done
+      - uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337  # v6.3.2
+        with:
+          tflint_version: v0.65.0
+          # Official SHA-256 of tflint_linux_amd64.zip v0.65.0 (from checksums.txt).
+          checksums: d4c545ed2e29d6338604b586f34f544f380f70f243aa72f7b484713835eaec61
+          cache: true
+          tflint_config_path: infra/.tflint.hcl
+      - name: tflint
+        env:
+          GITHUB_TOKEN: ${{ github.token }}  # plugin download without rate limits
+        run: |
+          tflint --init --config "$PWD/.tflint.hcl"
+          tflint --recursive --config "$PWD/.tflint.hcl" --format compact
