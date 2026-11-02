@@ -48,12 +48,19 @@ always a person's job.
 
 Locally, as an Owner: `./ops/scripts/killswitch.sh --project osrs-infra --dry-run`.
 
-## Restore billing (outline; timings from the live test below, full steps in OSRS-21)
+## Restore billing (full steps in OSRS-21)
 Needs **Billing Account User** on the billing account and **Owner** on the project.
 1. Find out why spend ran away and fix it first (Terraform, then apply).
-2. Console: Billing > Account management > link `osrs-infra`, or
-   `gcloud billing projects link osrs-infra --billing-account=<ID>`.
-   Don't paste the billing account ID anywhere public.
+2. Console: Billing > Account management > link `osrs-infra`, or (with
+   `PROJECT_ID` = `osrs-infra`):
+   ```
+   gcloud billing projects link PROJECT_ID \
+     --billing-account="$(gcloud billing accounts list \
+         --filter='displayName="My Billing Account"' \
+         --format='value(name.basename())')"
+   ```
+   The ID is looked up by name, so it never needs typing. The command's
+   output shows it: don't paste that anywhere public.
 3. Check `gcloud billing projects describe osrs-infra --format='value(billingEnabled)'`
    prints `True`, then re-run `infra/iam/verify.sh` and a `terraform plan`.
 
@@ -71,16 +78,50 @@ each step; the timings go in the test log.
    prints `billing is on`.
 5. Phone: Killswitch, project `osrs-killswitch-test-1102`, dry run ticked →
    `DRY-RUN`, billing `True`.
+   Leave a minute or two between steps 6 and 9: don't relink until step 7
+   has seen the read fail.
 6. Phone: same, dry run unticked, `UNLINK` typed → `UNLINKED`.
 7. Repeat step 4: expect a billing-disabled error. Retry every minute or so
    until it fails; note how long it took.
 8. Phone: repeat step 6 → `NO-OP` (idempotent).
-9. Restore: `gcloud billing projects link osrs-killswitch-test-1102 --billing-account=<ID>`,
-   then repeat step 4 until it prints `billing is on` again; note how long it took.
-10. `terraform destroy` in `infra/sandbox/killswitch_test`, then a PR that
-    removes the project from the allow list and workflow, and adds the result here.
+9. Restore: link billing again (command under "Restore billing", with
+   `PROJECT_ID` = the test project), then repeat step 4 until it prints
+   `billing is on`; note how long it took.
+10. `terraform destroy` in `infra/sandbox/killswitch_test` (expect 7 to
+    destroy; the project goes to `DELETE_REQUESTED` for 30 days), then a PR
+    that removes the project from the allow list and workflow, and adds the
+    result here.
+
+### Running the test again
+The sandbox root is kept, empty between tests. A deleted project ID can't be
+reused, so pick a new dated ID (e.g. `osrs-killswitch-test-MMDD`) and set it in:
+1. `infra/sandbox/killswitch_test/variables.tf` (`test_project_id`)
+2. `ops/scripts/killswitch.sh` (`ALLOWED_PROJECTS`)
+3. `.github/workflows/killswitch.yml` (`project` options)
+4. `infra/iam/verify.sh` (`TEST_PROJECT`)
+
+Then follow the steps above. Remove it from 2 and 3 after the destroy.
 
 ## Test log
 - 2026-10-30: dry run locally against `osrs-infra` → `DRY-RUN`, billing `True`.
   Refusals checked: no project, unknown flag, `osrs-llm` (not allowed) → exit 2.
-- Real unlink: pending, in `osrs-killswitch-test-1102` (OSRS-18, steps above).
+- 2026-11-02: OSRS-17 phone dry runs against `osrs-infra` (16:22, 16:28 UTC)
+  → `DRY-RUN`, billing `True`. A run from `develop` (16:19) was refused by the
+  branch check, as designed.
+- 2026-11-02: **live test in `osrs-killswitch-test-1102`** (OSRS-18), all
+  from the phone on `master`. Times UTC.
+
+  | Step | Result | Time |
+  | --- | --- | --- |
+  | Real unlink (button) | `UNLINKED`, billing `True` → `False` | run started 17:23:12, result 17:23:28 |
+  | Spend stops | canary read refused: `HTTPError 403: The billing account for the owning project is disabled in state absent` | 17:23:38 (10 s after unlink, 26 s after tap) |
+  | Run again | `NO-OP`, billing `False` → `False` | 17:25:33 |
+  | Relink by hand | billing `True` | 17:26:31 |
+  | Service back | canary reads `billing is on` | 17:26:33 (2 s after relink) |
+  | Destroy | 7 destroyed; project `DELETE_REQUESTED` | after 17:27 |
+
+  Notes: an earlier real unlink (17:11:52, `UNLINKED`) was relinked within two
+  minutes, before the canary was checked, so it was repeated. The button dry
+  run on the test project (step 5) was skipped; dry runs were already proven
+  on `osrs-infra`. Times are for an idle project with one object; real
+  workloads may take longer to recover.
