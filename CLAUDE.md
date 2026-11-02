@@ -85,7 +85,7 @@ Notes are written for Claude to resume from and for Joe to revise from. Keep the
 - **Turning on APIs/services is Joe's step.** Claude declares them in Terraform (`google_project_service`) and shows the plan; Joe runs the apply that enables them. Claude never enables a service itself (no `gcloud services enable`, no apply that includes one).
 - **Data and LLM**: deterministic entity linking comes before any LLM call. Prompts are versioned in `prompts/`. Changes to prompts or extraction need an eval run.
 - Pin GitHub Actions to SHAs (the repo requires it). Third-party actions must be on the repo's Actions allowlist (Settings → Actions → General) before a workflow can use them; otherwise the run fails with `startup_failure` and no logs.
-- `master` and `develop` are protected by the `protect-master` ruleset: PR only, no force push or deletion, linear history, and `lint`, `test`, `gitleaks` must pass. Secret scanning with push protection, Dependabot alerts and security updates are on; the default workflow token is read-only.
+- Rulesets (ADR 0004): `protect-develop` (squash or rebase, linear history) and `protect-master` (merge commits only, for releases from `develop`). Both: PR only, no force push or deletion, and `lint`, `test`, `gitleaks` must pass. Secret scanning with push protection, Dependabot alerts and security updates are on; the default workflow token is read-only.
 
 ## Tickets and decisions
 - Joe assigns work as tickets. Work through the assigned ticket; don't pick up other stories or epics unprompted.

@@ -35,9 +35,10 @@ set -euo pipefail
 
 # --- Configuration ---------------------------------------------------------
 
-# Projects this script may touch. A second lock on top of IAM. The throwaway
-# test project is added here in OSRS-18. ( ... ) makes a bash array.
-ALLOWED_PROJECTS=(osrs-infra)
+# Projects this script may touch. A second lock on top of IAM. ( ... ) makes a
+# bash array. osrs-killswitch-test-1102 is the throwaway project for the live
+# test (OSRS-18, infra/sandbox/killswitch_test); remove it once destroyed.
+ALLOWED_PROJECTS=(osrs-infra osrs-killswitch-test-1102)
 
 # --- Arguments -------------------------------------------------------------
 

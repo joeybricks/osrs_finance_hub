@@ -34,8 +34,10 @@ always a person's job.
    branches: **Selected branches**, add `master`. No secrets needed.
 3. Release `develop` to `master`. The button only appears once the workflow
    is on the default branch (`develop`), and only works when run on `master`.
-4. GitHub: Settings > Notifications > Actions: turn on GitHub Mobile, and untick
-   "Only notify for failed workflows" to hear about successful runs too.
+4. GitHub: Settings > Notifications > Actions: untick "Only notify for failed
+   workflows" to hear about successful runs too. The result arrives by
+   **email**; GitHub Mobile sends no push for workflow runs (checked
+   2026-11-02), so the email is the notification channel.
 5. From the phone: run it with dry run ticked. Expect `DRY-RUN`, billing `True`.
 
 ## Running it
@@ -46,7 +48,7 @@ always a person's job.
 
 Locally, as an Owner: `./ops/scripts/killswitch.sh --project osrs-infra --dry-run`.
 
-## Restore billing (outline; full steps and timings in OSRS-18 / OSRS-21)
+## Restore billing (outline; timings from the live test below, full steps in OSRS-21)
 Needs **Billing Account User** on the billing account and **Owner** on the project.
 1. Find out why spend ran away and fix it first (Terraform, then apply).
 2. Console: Billing > Account management > link `osrs-infra`, or
@@ -55,7 +57,30 @@ Needs **Billing Account User** on the billing account and **Owner** on the proje
 3. Check `gcloud billing projects describe osrs-infra --format='value(billingEnabled)'`
    prints `True`, then re-run `infra/iam/verify.sh` and a `terraform plan`.
 
+## Live test in a throwaway project (OSRS-18)
+Never run a real unlink against `osrs-infra` as a test. Note the time (UTC) at
+each step; the timings go in the test log.
+
+1. Merge the PR that adds `osrs-killswitch-test-1102` to the allow list and the
+   workflow choices, and release `develop` to `master`.
+2. Create the project (billing on, a canary object, the killswitch role):
+   `cd infra/sandbox/killswitch_test && terraform plan && terraform apply`.
+   Plan output shows the billing account ID: don't paste it anywhere public.
+3. `./infra/iam/verify.sh`: the test-project section must pass.
+4. Baseline: `gcloud storage cat gs://osrs-killswitch-test-1102-canary/canary.txt`
+   prints `billing is on`.
+5. Phone: Killswitch, project `osrs-killswitch-test-1102`, dry run ticked →
+   `DRY-RUN`, billing `True`.
+6. Phone: same, dry run unticked, `UNLINK` typed → `UNLINKED`.
+7. Repeat step 4: expect a billing-disabled error. Retry every minute or so
+   until it fails; note how long it took.
+8. Phone: repeat step 6 → `NO-OP` (idempotent).
+9. Restore: `gcloud billing projects link osrs-killswitch-test-1102 --billing-account=<ID>`,
+   then repeat step 4 until it prints `billing is on` again; note how long it took.
+10. `terraform destroy` in `infra/sandbox/killswitch_test`, then a PR that
+    removes the project from the allow list and workflow, and adds the result here.
+
 ## Test log
 - 2026-10-30: dry run locally against `osrs-infra` → `DRY-RUN`, billing `True`.
   Refusals checked: no project, unknown flag, `osrs-llm` (not allowed) → exit 2.
-- Real unlink: pending, in a throwaway project (OSRS-18).
+- Real unlink: pending, in `osrs-killswitch-test-1102` (OSRS-18, steps above).
