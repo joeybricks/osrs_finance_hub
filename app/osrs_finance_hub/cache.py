@@ -16,7 +16,8 @@ from typing import Any
 
 from .config import Settings
 from .flips import Flip, build_all_flips
-from .wiki_api import WikiApiError, WikiPricesClient
+from .price_source import PriceSource
+from .wiki_api import WikiApiError
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class TimeseriesEntry:
 class PriceCache:
     """Holds mapping, /latest, /1h, /5m and on-demand /timeseries."""
 
-    def __init__(self, client: WikiPricesClient, settings: Settings) -> None:
+    def __init__(self, client: PriceSource, settings: Settings) -> None:
         self._client = client
         self._settings = settings
 

@@ -140,6 +140,13 @@ Why this change exists and which problem or ticket it addresses.
 - Follow-up work, known limitations, or ideas for later
 ```
 
+### Claude review
+
+Every PR that contains code gets the `claude-review` label (`.github/workflows/claude-review.yml`). Docs- or notes-only PRs can skip it.
+
+- The workflow fires only when the label is added, not on later pushes. Add it after the push you want reviewed.
+- After a further push that changes code, review again: remove and re-add the label, or comment `@claude` on the PR.
+
 ## GitHub Actions guardrails
 
 Public repo: standard GitHub-hosted runners are free and unmetered. Larger runners still bill, and the $0 spending limit stays on as a backstop. Runaway workflows are still the main risk (noise, queueing, and minutes if the repo ever goes private), so every workflow must follow these rules:

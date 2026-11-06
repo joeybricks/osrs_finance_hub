@@ -93,7 +93,7 @@ Every flag has an environment variable, which the flag overrides:
 | Variable | Default | What it controls |
 | --- | --- | --- |
 | `OSRS_FINANCE_HUB_CONTACT` | unset | Your contact string in the User-Agent |
-| `OSRS_FINANCE_HUB_PORT` | `8080` | Port |
+| `OSRS_FINANCE_HUB_PORT` | `$PORT`, else `8080` | Port. Falls back to `PORT`, which Cloud Run sets |
 | `OSRS_FINANCE_HUB_HOST` | `127.0.0.1` | Bind address |
 | `OSRS_FINANCE_HUB_VOLUME_FRACTION` | `0.10` | Share of 4h volume you expect to capture |
 | `OSRS_FINANCE_HUB_AGGRESSION` | `0.25` | Share of the post-tax margin conceded for a faster fill |
@@ -119,7 +119,8 @@ osrs-finance-hub/0.1.0 (contact: you@example.com)
 ```
 
 It runs without one and warns you on startup, but please set it. An email
-address or a Discord handle is fine.
+address, Discord handle or GitHub handle is fine. There is deliberately no
+default: anyone running a copy of this repo should identify as themselves.
 
 ### The volume fraction
 
