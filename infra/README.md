@@ -95,6 +95,26 @@ tests in `policy/free_tier_test.rego` run in `ci.yml` with no GCP access.
 Only `envs/prod` is planned in CI, so `iam/`, `billing/` and `sandbox/` are
 not gated; run the policy by hand on those when they change.
 
+### Second opinion: Infracost (OSRS-20)
+
+After the policy, `plan.yml` runs [Infracost](https://www.infracost.io/) on
+the same `plan.json` and fails if the estimated monthly cost is above $0.
+It prices in USD and does not model every free allowance; usage-based
+services (Cloud Run, BigQuery, Pub/Sub) show $0 without a usage file. So it
+catches fixed-price resources the policy might miss, not the other way
+round. The policy is the gate, Infracost is the check on it.
+
+Only resource types and SKUs are sent to Infracost's pricing API, never plan
+values, and `INFRACOST_ENABLE_CLOUD=false` stops estimates being uploaded.
+The CLI and pricing API are free. The key is the `INFRACOST_API_KEY` repo
+secret, made once with `infracost auth login`.
+
+CI pins the classic CLI (v0.10.x, `breakdown`, API key). Homebrew installs
+Infracost v2, a different product (`scan`, OAuth token, uploads every run to
+Infracost Cloud). For local use get the classic binary from
+https://github.com/infracost/infracost/releases (`infracost-darwin-arm64`);
+its `auth login` writes the API key to `~/.config/infracost/credentials.yml`.
+
 ## Local checks (same as CI)
 
 ```bash
