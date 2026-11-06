@@ -13,6 +13,7 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 | `iam/` | Service accounts and their roles (OSRS-11); state under `iam/`. Applied locally by an Owner, never by CI |
 | `billing/` | Budget on the billing account (OSRS-14); state under `billing/`. Applied locally by the billing admin, never by CI |
 | `sandbox/killswitch_test/` | Throwaway project for the live killswitch test (OSRS-18); state under `sandbox/killswitch-test/`. Applied and destroyed locally by Joe, never by CI. Kept for reruns; empty between tests |
+| `policy/` | Free-tier policy (OSRS-19): Rego rules Conftest runs against every PR plan, plus their unit tests. See "Free-tier gate" |
 | `modules/` | Reusable modules (none yet) |
 | `.tflint.hcl` | TFLint rules: Terraform recommended preset + Google ruleset |
 
@@ -66,6 +67,34 @@ The provider sets a quota project (`user_project_override`), which the Budgets
 API requires for user credentials. Steps and checks:
 [`ops/runbooks/budget-alerts.md`](../ops/runbooks/budget-alerts.md).
 
+## Free-tier gate (`policy/`, OSRS-19)
+
+`plan.yml` saves the PR plan, converts it to JSON and runs
+[Conftest](https://www.conftest.dev/) over it. Conftest evaluates rules
+written in Rego, the language of Open Policy Agent (OPA), against any JSON.
+A rule that matches produces a `deny` message and fails the job.
+
+```
+terraform plan -out=tfplan  →  terraform show -json tfplan  →  conftest test plan.json
+                                 resource_changes[].{type, change.actions, change.after}
+```
+
+Only resources being created or updated are judged, so deleting a banned
+resource passes. The rules in `policy/free_tier.rego`:
+
+| Rule | Why |
+| --- | --- |
+| Banned families: `google_compute_*`, `google_sql_*`, `google_container_*`, `google_redis_*`, `google_filestore_*` | Compute Engine, load balancers, Cloud NAT, Cloud SQL, GKE, Memorystore and Filestore are billed from the first minute |
+| Any other type must be on the allowlist | Adding a service is a deliberate edit, not an accident |
+| Cloud Run v2: `min_instance_count` 0, `max_instance_count` set and ≤ 2 | An always-on instance bills every second; the default max is 100 |
+| Buckets and BigQuery datasets in `us-central1` only | Always Free is regional (ADR 0001); the multi-region `US` is billed |
+| Artifact Registry repos need a `cleanup_policies` block | Storage past 0.5 GB is billed and images pile up |
+
+Every message names the resource address and what to do instead. The unit
+tests in `policy/free_tier_test.rego` run in `ci.yml` with no GCP access.
+Only `envs/prod` is planned in CI, so `iam/`, `billing/` and `sandbox/` are
+not gated; run the policy by hand on those when they change.
+
 ## Local checks (same as CI)
 
 ```bash
@@ -74,6 +103,16 @@ terraform fmt -check -recursive
 for root in envs/prod iam billing; do (cd $root && terraform init && terraform validate); done
 tflint --init --config "$(pwd)/.tflint.hcl"
 tflint --recursive --config "$(pwd)/.tflint.hcl"
+conftest fmt --check policy && conftest verify -p policy     # brew install conftest
+```
+
+To run the policy on a real plan (the plan file holds every value in clear
+text, so keep it out of the repo; both names are gitignored):
+
+```bash
+cd infra/envs/prod
+terraform plan -lock=false -out=tfplan && terraform show -json tfplan > plan.json
+conftest test plan.json -p ../../policy --namespace free_tier
 ```
 
 Provider versions are fixed by each root's `.terraform.lock.hcl` (darwin_arm64 and
