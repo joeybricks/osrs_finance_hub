@@ -11,7 +11,7 @@ app/tests/fixtures/wiki/. After re-recording, regenerate the snapshots:
     OSRS_UPDATE_SNAPSHOTS=1 uv run pytest app/tests/test_characterisation.py
 
 Items are picked by fixed rules so the data covers the awkward cases
-(no tax under 100 gp, the tax cap, missing prices) and keeps the Sets and
+(no tax under 50 gp, the tax cap, missing prices) and keeps the Sets and
 Magic tabs populated. Use --include to add specific item ids.
 """
 
@@ -25,7 +25,7 @@ from typing import Any
 
 import httpx
 from osrs_finance_hub.config import Settings
-from osrs_finance_hub.flips import build_all_flips
+from osrs_finance_hub.flips import GE_TAX_FREE_BELOW, build_all_flips
 from osrs_finance_hub.magic_data import BOLT_ENCHANTS, JEWELLERY_ENCHANTS, RUNE_IDS
 from osrs_finance_hub.set_data import ITEM_SETS
 from osrs_finance_hub.wiki_api import BASE_URL
@@ -80,7 +80,7 @@ def choose_ids(raw: dict[str, Any], now: int) -> set[int]:
 
     chosen |= set(top(priced, volume, 30))                                  # busiest
     chosen |= set(top(priced, lambda i: price(i, "high"), 15))              # tax cap
-    chosen |= set(top([i for i in priced if price(i, "high") < 100], volume, 15))  # no tax
+    chosen |= set(top([i for i in priced if price(i, "high") < GE_TAX_FREE_BELOW], volume, 15))  # no tax
     one_sided = [i for i in mapping_ids if str(i) in latest and not (price(i, "high") and price(i, "low"))]
     chosen |= set(one_sided[:10])
     chosen |= set([i for i in mapping_ids if str(i) not in latest][:10])    # never traded

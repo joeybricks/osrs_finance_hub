@@ -104,12 +104,11 @@ def test_flips_unchanged(client):
 # tax rules are visible, not just buried in the snapshot.
 KNOWN_FLIPS = {
     # id: (name, low, high, tax, margin, suggested_buy, suggested_sell)
-    13190: ("Old school bond", 10_000_000, 10_500_672, 210_013, 290_659, 10_036_332, 10_464_340),  # 2%
     22486: ("Scythe of Vitur (uncharged)", 1_027_000_000, 1_041_154_823, 5_000_000, 9_154_823,
             1_028_144_352, 1_040_010_471),                                                 # 5m cap
     20997: ("Twisted bow", 1_414_306_000, 1_423_000_000, 5_000_000, 3_694_000,
             1_414_767_750, 1_422_538_250),                                                 # 5m cap
-    23959: ("Enhanced crystal teleport seed", 2_800_336, 2_888_708, 57_774, 30_598, 2_804_160, 2_884_884),
+    23959: ("Enhanced crystal teleport seed", 2_800_336, 2_888_708, 57_774, 30_598, 2_804_160, 2_884_884),  # 2%
 }
 
 
@@ -135,6 +134,21 @@ def test_whole_hour_spike_is_not_flagged_today(client):
     assert flip["high"] == 90_000
     assert flip["spread_ratio"] == 1.0
     assert flip["suspicious_spread"] is False
+
+
+def test_tax_exempt_items_are_taxed_today(client):
+    """Known gap, pinned so it is visible. Not a refactor concern.
+
+    Old school bonds are exempt from the GE tax in game (as are some food,
+    tools, teleports and low-level ammo; see the wiki's Grand Exchange page),
+    but ge_tax() has no exemption list and charges 2%. The real bond margin
+    here is 500,672, not 290,659. When exemptions are added, flip this.
+    """
+    flip = next(f for f in client.get("/api/flips").json()["items"] if f["id"] == 13190)
+    assert flip["name"] == "Old school bond"
+    assert (flip["low"], flip["high"]) == (10_000_000, 10_500_672)
+    assert flip["tax"] == 210_013          # should be 0
+    assert flip["margin"] == 290_659       # should be 500,672
 
 
 def test_sets_unchanged(client):
