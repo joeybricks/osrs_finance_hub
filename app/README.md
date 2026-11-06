@@ -51,7 +51,7 @@ a link to its wiki page, and a price history chart over a selectable span.
 
 ## Install
 
-Requires Python 3.10 or newer and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.11 or newer and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone <this repo>
