@@ -119,7 +119,8 @@ osrs-finance-hub/0.1.0 (contact: you@example.com)
 ```
 
 It runs without one and warns you on startup, but please set it. An email
-address or a Discord handle is fine.
+address, Discord handle or GitHub handle is fine. There is deliberately no
+default: anyone running a copy of this repo should identify as themselves.
 
 ### The volume fraction
 
