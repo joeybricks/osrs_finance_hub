@@ -11,11 +11,6 @@ on:
   pull_request_review_comment:
     types: [created]
 
-# One review per PR at a time; a new request cancels the old one.
-concurrency:
-  group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
@@ -33,6 +28,13 @@ jobs:
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # One review per PR at a time; a new request cancels the old one. This
+    # sits on the job, not the workflow, so it applies only after `if` above:
+    # the review's own progress comment fires issue_comment, and at workflow
+    # level that run joined the group and cancelled the review it came from.
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: write
