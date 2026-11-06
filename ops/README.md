@@ -1,14 +1,20 @@
 # ops
 
-Operational scripts, checks and runbooks: cost digests, manual steps and
+Operational scripts and runbooks: manual steps, incident procedures and
 housekeeping.
 
 ## Runbooks
 Manual steps that can't be done through Terraform.
 
-- [Billing export to BigQuery](runbooks/billing-export.md) (OSRS-13)
-- [Budget and phone alerts](runbooks/budget-alerts.md) (OSRS-14, OSRS-15)
-- [Billing killswitch](runbooks/killswitch.md) (OSRS-16, OSRS-17)
+- [Billing export to BigQuery](runbooks/billing-export.md) (OSRS-13): the
+  console step Terraform can't do, and the cost-by-service query.
+- [Budget and phone alerts](runbooks/budget-alerts.md) (OSRS-14, OSRS-15,
+  OSRS-21): set-up, what each threshold means, **a budget alert fired**.
+- [Billing killswitch](runbooks/killswitch.md) (OSRS-16 to OSRS-18, OSRS-21):
+  how to press it, **the killswitch has fired**, **restore billing**, live test.
+
+Why the guardrails look like this, and what they can't prevent:
+[ADR 0005](../docs/adr/0005-cost-guardrails.md).
 
 ## Scripts
 - [`scripts/budget-alert-test.sh`](scripts/budget-alert-test.sh): synthetic
