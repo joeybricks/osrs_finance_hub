@@ -1,0 +1,30 @@
+# Dependabot version updates (OSRS-22). Security alerts and security-update
+# PRs are switched on in repo settings; this file adds routine weekly bumps.
+# One grouped PR per ecosystem per week keeps the noise (and CI runs) low.
+version: 2
+updates:
+  # Python deps in uv.lock (app + repo-wide dev tools).
+  - package-ecosystem: "uv"
+    directory: "/"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+    groups:
+      python:
+        patterns: ["*"]
+    commit-message:
+      prefix: "deps"
+
+  # Actions are pinned to SHAs; Dependabot bumps the SHA and the version comment.
+  - package-ecosystem: "github-actions"
+    directories:
+      - "/"
+      - "/.github/actions/*"
+    target-branch: "develop"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "deps"
