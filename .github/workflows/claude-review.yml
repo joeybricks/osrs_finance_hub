@@ -11,11 +11,6 @@ on:
   pull_request_review_comment:
     types: [created]
 
-# One review per PR at a time; a new request cancels the old one.
-concurrency:
-  group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
@@ -33,12 +28,49 @@ jobs:
         contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # One review per PR at a time; a new request cancels the old one. This
+    # sits on the job, not the workflow, so it applies only after `if` above:
+    # the review's own progress comment fires issue_comment, and at workflow
+    # level that run joined the group and cancelled the review it came from.
+    concurrency:
+      group: claude-review-${{ github.event.pull_request.number || github.event.issue.number }}
+      cancel-in-progress: true
     permissions:
       contents: read
       pull-requests: write
       issues: write
+      checks: read     # read the other workflows' results below
       id-token: write  # OIDC exchange for the Claude GitHub App token
     steps:
+      # Tokens are only spent once the action below starts, so wait for every
+      # other check on the PR first and stop if any failed. The review's own
+      # check is excluded or it would wait for itself. Runner minutes are
+      # free here; Pro usage is not.
+      - name: Wait for the other checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number || github.event.issue.number }}
+          SELF: ${{ github.job }}
+        run: |
+          set -euo pipefail
+          for _ in $(seq 1 32); do   # 32 x 15s = 8 min, inside the job timeout
+            others=$(gh pr checks "$PR" --json name,bucket --jq "[.[] | select(.name != \"$SELF\")]")
+            echo "$others" | jq -r '.[] | "\(.bucket)\t\(.name)"'
+            if ! echo "$others" | jq -e 'any(.[]; .bucket == "pending")' > /dev/null; then
+              failed=$(echo "$others" | jq -r '[.[] | select(.bucket == "fail" or .bucket == "cancel") | .name] | join(", ")')
+              if [ -n "$failed" ]; then
+                echo "::error::Not reviewing: these checks did not pass: $failed. Fix them, then re-add the label."
+                exit 1
+              fi
+              echo "All other checks passed."
+              exit 0
+            fi
+            echo "Waiting..."; sleep 15
+          done
+          echo "::error::Gave up waiting for the other checks after 8 minutes."
+          exit 1
+
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 1
