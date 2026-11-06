@@ -13,6 +13,7 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 | `iam/` | Service accounts and their roles (OSRS-11); state under `iam/`. Applied locally by an Owner, never by CI |
 | `billing/` | Budget on the billing account (OSRS-14); state under `billing/`. Applied locally by the billing admin, never by CI |
 | `sandbox/killswitch_test/` | Throwaway project for the live killswitch test (OSRS-18); state under `sandbox/killswitch-test/`. Applied and destroyed locally by Joe, never by CI. Kept for reruns; empty between tests |
+| `policy/` | Free-tier policy (OSRS-19): Rego rules Conftest runs against every PR plan, plus their unit tests. See "Free-tier gate" |
 | `modules/` | Reusable modules (none yet) |
 | `.tflint.hcl` | TFLint rules: Terraform recommended preset + Google ruleset |
 
@@ -66,6 +67,54 @@ The provider sets a quota project (`user_project_override`), which the Budgets
 API requires for user credentials. Steps and checks:
 [`ops/runbooks/budget-alerts.md`](../ops/runbooks/budget-alerts.md).
 
+## Free-tier gate (`policy/`, OSRS-19)
+
+`plan.yml` saves the PR plan, converts it to JSON and runs
+[Conftest](https://www.conftest.dev/) over it. Conftest evaluates rules
+written in Rego, the language of Open Policy Agent (OPA), against any JSON.
+A rule that matches produces a `deny` message and fails the job.
+
+```
+terraform plan -out=tfplan  →  terraform show -json tfplan  →  conftest test plan.json
+                                 resource_changes[].{type, change.actions, change.after}
+```
+
+Only resources being created or updated are judged, so deleting a banned
+resource passes. The rules in `policy/free_tier.rego`:
+
+| Rule | Why |
+| --- | --- |
+| Banned families: `google_compute_*`, `google_sql_*`, `google_container_*`, `google_redis_*`, `google_filestore_*` | Compute Engine, load balancers, Cloud NAT, Cloud SQL, GKE, Memorystore and Filestore are billed from the first minute |
+| Any other type must be on the allowlist | Adding a service is a deliberate edit, not an accident |
+| Cloud Run v2: `min_instance_count` 0, `max_instance_count` set and ≤ 2 | An always-on instance bills every second; the default max is 100 |
+| Buckets and BigQuery datasets in `us-central1` only, and the location must be known at plan time | Always Free is regional (ADR 0001); the multi-region `US` is billed. A computed location is not in the plan and would pass unchecked |
+| Artifact Registry repos need a `cleanup_policies` block with `cleanup_policy_dry_run` off | Storage past 0.5 GB is billed and images pile up; dry run only logs |
+
+Every message names the resource address and what to do instead. The unit
+tests in `policy/free_tier_test.rego` run in `ci.yml` with no GCP access.
+Only `envs/prod` is planned in CI, so `iam/`, `billing/` and `sandbox/` are
+not gated; run the policy by hand on those when they change.
+
+### Second opinion: Infracost (OSRS-20)
+
+After the policy, `plan.yml` runs [Infracost](https://www.infracost.io/) on
+the same `plan.json` and fails if the estimated monthly cost is above $0.
+It prices in USD and does not model every free allowance; usage-based
+services (Cloud Run, BigQuery, Pub/Sub) show $0 without a usage file. So it
+catches fixed-price resources the policy might miss, not the other way
+round. The policy is the gate, Infracost is the check on it.
+
+Only resource types and SKUs are sent to Infracost's pricing API, never plan
+values, and `INFRACOST_ENABLE_CLOUD=false` stops estimates being uploaded.
+The CLI and pricing API are free. The key is the `INFRACOST_API_KEY` repo
+secret, made once with `infracost auth login`.
+
+CI pins the classic CLI (v0.10.x, `breakdown`, API key). Homebrew installs
+Infracost v2, a different product (`scan`, OAuth token, uploads every run to
+Infracost Cloud). For local use get the classic binary from
+https://github.com/infracost/infracost/releases (`infracost-darwin-arm64`);
+its `auth login` writes the API key to `~/.config/infracost/credentials.yml`.
+
 ## Local checks (same as CI)
 
 ```bash
@@ -74,6 +123,16 @@ terraform fmt -check -recursive
 for root in envs/prod iam billing; do (cd $root && terraform init && terraform validate); done
 tflint --init --config "$(pwd)/.tflint.hcl"
 tflint --recursive --config "$(pwd)/.tflint.hcl"
+conftest fmt --check policy && conftest verify -p policy     # brew install conftest
+```
+
+To run the policy on a real plan (the plan file holds every value in clear
+text, so keep it out of the repo; both names are gitignored):
+
+```bash
+cd infra/envs/prod
+terraform plan -lock=false -out=tfplan && terraform show -json tfplan > plan.json
+conftest test plan.json -p ../../policy --namespace free_tier
 ```
 
 Provider versions are fixed by each root's `.terraform.lock.hcl` (darwin_arm64 and

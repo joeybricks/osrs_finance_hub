@@ -1,0 +1,30 @@
+name: Set up Conftest
+description: >
+  Installs a pinned Conftest release and checks its SHA-256 (from the release's
+  checksums.txt). A local composite action, so it needs no Actions allowlist
+  entry and both ci.yml and plan.yml share one pinned version.
+
+inputs:
+  version:
+    description: Conftest version (no leading v)
+    default: "0.71.1"
+  sha256:
+    description: SHA-256 of conftest_<version>_Linux_x86_64.tar.gz
+    default: c3f6b2a753bd56e377a1e51a95ae3e057f926f2e9139f7d5b5dfbbaf810f7985
+
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        SHA256: ${{ inputs.sha256 }}
+      run: |
+        set -euo pipefail
+        tmp=$(mktemp -d)
+        curl -fsSL -o "$tmp/conftest.tar.gz" \
+          "https://github.com/open-policy-agent/conftest/releases/download/v${VERSION}/conftest_${VERSION}_Linux_x86_64.tar.gz"
+        echo "${SHA256}  $tmp/conftest.tar.gz" | sha256sum -c -
+        tar -xzf "$tmp/conftest.tar.gz" -C "$tmp" conftest
+        sudo install "$tmp/conftest" /usr/local/bin/conftest
+        conftest --version

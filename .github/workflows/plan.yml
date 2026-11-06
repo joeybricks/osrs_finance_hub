@@ -9,6 +9,7 @@ on:
     paths:
       - "infra/**"
       - ".github/workflows/plan.yml"
+      - ".github/actions/**"
 
 concurrency:
   group: plan-${{ github.ref }}
@@ -50,7 +51,55 @@ jobs:
       # -lock=false: plan-sa cannot write the .tflock object, and plan never
       # writes state, so no lock is needed.
       - name: terraform plan
-        run: terraform plan -lock=false -input=false -no-color | tee plan.txt
+        run: terraform plan -lock=false -input=false -no-color -out=tfplan | tee plan.txt
+      # plan.json is the same plan as structured data. It holds every attribute
+      # value in clear text, so it stays on the runner: never upload it.
+      - name: Plan to JSON
+        run: terraform show -json tfplan > plan.json
+      # Free-tier policy (OSRS-19): rules in infra/policy. Any deny fails the job.
+      - uses: ./.github/actions/setup-conftest
+      - name: Free-tier policy
+        id: policy
+        run: |
+          set -o pipefail
+          conftest test plan.json -p ../../policy --namespace free_tier --no-color | tee policy.txt
+      # Infra cost (OSRS-20): a second opinion in USD from Infracost's pricing
+      # API. Only resource types and SKUs leave the runner, not plan values.
+      # Usage-based services (Cloud Run, BigQuery) price at $0 without a usage
+      # file, so the policy above is the main gate. Pinned release binary with
+      # its published SHA-256, same as Conftest.
+      - name: Install Infracost
+        if: success() || steps.policy.outcome == 'failure'
+        env:
+          VERSION: v0.10.47
+          SHA256: df098d5565b78cc23de57e1dac9f2a02491691322cbd690dca9b197e3e02fe93
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp -d)
+          curl -fsSL -o "$tmp/infracost.tar.gz" \
+            "https://github.com/infracost/infracost/releases/download/${VERSION}/infracost-linux-amd64.tar.gz"
+          echo "${SHA256}  $tmp/infracost.tar.gz" | sha256sum -c -
+          tar -xzf "$tmp/infracost.tar.gz" -C "$tmp"
+          sudo install "$tmp/infracost-linux-amd64" /usr/local/bin/infracost
+          infracost --version
+      # Still runs when only the policy failed, so a paid resource shows both
+      # verdicts. Fails if the estimate is above $0/month.
+      - name: Infra cost
+        if: success() || steps.policy.outcome == 'failure'
+        env:
+          INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+          INFRACOST_ENABLE_CLOUD: "false"  # never upload estimates to Infracost Cloud
+          INFRACOST_SKIP_UPDATE_CHECK: "true"
+        run: |
+          set -euo pipefail
+          infracost breakdown --path plan.json --format json --out-file infracost.json
+          infracost output --path infracost.json --format table --no-color | tee cost.txt
+          total=$(jq -r '.totalMonthlyCost // "0"' infracost.json)
+          if [ "$(jq -r '((.totalMonthlyCost // "0") | tonumber) > 0' infracost.json)" = "true" ]; then
+            echo "::error::Estimated monthly cost is \$$total USD; must be 0 (budget is £2)"
+            exit 1
+          fi
+          echo "Estimated monthly cost: \$$total USD"
       - name: Plan to job summary
         if: always()
         run: |
@@ -58,5 +107,13 @@ jobs:
             echo "## terraform plan: envs/prod"
             echo '```'
             tail -c 60000 plan.txt 2>/dev/null || echo "No plan output."
+            echo '```'
+            echo "## Free-tier policy"
+            echo '```'
+            cat policy.txt 2>/dev/null || echo "Policy did not run."
+            echo '```'
+            echo "## Infra cost (Infracost, USD/month)"
+            echo '```'
+            cat cost.txt 2>/dev/null || echo "Infracost did not run."
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
