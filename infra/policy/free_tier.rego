@@ -119,6 +119,15 @@ deny contains msg if {
 	msg := sprintf("%s: location %q is outside %s (ADR 0001)", [rc.address, rc.change.after.location, region])
 }
 
+# A location computed from another resource is not in `after` at plan time
+# (it sits in `after_unknown`), which would make the rule above pass silently.
+deny contains msg if {
+	some rc in changed
+	rc.type in {"google_storage_bucket", "google_bigquery_dataset"}
+	rc.change.after_unknown.location == true
+	msg := sprintf("%s: location is not known at plan time; write it as a literal or var.region so it can be checked", [rc.address])
+}
+
 # Artifact Registry storage is billed past 0.5 GB; images pile up without a
 # cleanup policy.
 deny contains msg if {
@@ -126,4 +135,12 @@ deny contains msg if {
 	rc.type == "google_artifact_registry_repository"
 	count(object.get(rc.change.after, "cleanup_policies", [])) == 0
 	msg := sprintf("%s: add at least one cleanup_policies block so old images are deleted", [rc.address])
+}
+
+# In dry-run mode the cleanup policy only logs what it would delete.
+deny contains msg if {
+	some rc in changed
+	rc.type == "google_artifact_registry_repository"
+	rc.change.after.cleanup_policy_dry_run == true
+	msg := sprintf("%s: cleanup_policy_dry_run is true, so cleanup policies delete nothing; set it to false", [rc.address])
 }

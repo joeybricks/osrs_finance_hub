@@ -130,7 +130,28 @@ test_artifact_registry_without_cleanup_denied if {
 }
 
 test_artifact_registry_with_cleanup_passes if {
-	count(deny) == 0 with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "keep-5", "action": "KEEP"}]})])
+	count(deny) == 0 with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "keep-5", "action": "KEEP"}], "cleanup_policy_dry_run": false})])
+}
+
+test_artifact_registry_dry_run_denied if {
+	msgs := deny with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "keep-5", "action": "KEEP"}], "cleanup_policy_dry_run": true})])
+	count(msgs) == 1
+	some msg in msgs
+	contains(msg, "cleanup_policy_dry_run is true")
+}
+
+# Location derived from another resource: absent from `after`, flagged in
+# `after_unknown`. Must deny rather than pass silently.
+test_bucket_unknown_location_denied if {
+	msgs := deny with input as plan([{
+		"address": "google_storage_bucket.derived",
+		"mode": "managed",
+		"type": "google_storage_bucket",
+		"change": {"actions": ["create"], "after": {"name": "x"}, "after_unknown": {"location": true}},
+	}])
+	count(msgs) == 1
+	some msg in msgs
+	contains(msg, "location is not known at plan time")
 }
 
 test_secret_manager_and_scheduler_allowed if {

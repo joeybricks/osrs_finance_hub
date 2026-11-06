@@ -87,8 +87,8 @@ resource passes. The rules in `policy/free_tier.rego`:
 | Banned families: `google_compute_*`, `google_sql_*`, `google_container_*`, `google_redis_*`, `google_filestore_*` | Compute Engine, load balancers, Cloud NAT, Cloud SQL, GKE, Memorystore and Filestore are billed from the first minute |
 | Any other type must be on the allowlist | Adding a service is a deliberate edit, not an accident |
 | Cloud Run v2: `min_instance_count` 0, `max_instance_count` set and ≤ 2 | An always-on instance bills every second; the default max is 100 |
-| Buckets and BigQuery datasets in `us-central1` only | Always Free is regional (ADR 0001); the multi-region `US` is billed |
-| Artifact Registry repos need a `cleanup_policies` block | Storage past 0.5 GB is billed and images pile up |
+| Buckets and BigQuery datasets in `us-central1` only, and the location must be known at plan time | Always Free is regional (ADR 0001); the multi-region `US` is billed. A computed location is not in the plan and would pass unchecked |
+| Artifact Registry repos need a `cleanup_policies` block with `cleanup_policy_dry_run` off | Storage past 0.5 GB is billed and images pile up; dry run only logs |
 
 Every message names the resource address and what to do instead. The unit
 tests in `policy/free_tier_test.rego` run in `ci.yml` with no GCP access.
