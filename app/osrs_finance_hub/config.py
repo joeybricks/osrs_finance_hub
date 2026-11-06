@@ -80,7 +80,9 @@ class Settings:
                         Path.home() / ".osrs_finance_hub" / "positions.json")
             ).expanduser(),
             host=env.get("OSRS_FINANCE_HUB_HOST", "127.0.0.1"),
-            port=int(env.get("OSRS_FINANCE_HUB_PORT", 8080)),
+            # PORT is what Cloud Run (and most container hosts) set. Our own
+            # variable wins so a stray PORT on a laptop can't override it.
+            port=int(env.get("OSRS_FINANCE_HUB_PORT") or env.get("PORT") or 8080),
             open_browser=env.get("OSRS_FINANCE_HUB_OPEN_BROWSER", "1") not in ("0", "false", "no"),
         )
 
