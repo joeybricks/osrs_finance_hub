@@ -9,3 +9,4 @@ ADR that supersedes the old one.
 | [0002](0002-keyless-ci-auth-wif.md) | Keyless CI auth to GCP with Workload Identity Federation | Accepted |
 | [0003](0003-budget-separate-root-email-alerts.md) | Budget in its own Owner-applied root; email as the phone alert | Accepted |
 | [0004](0004-release-flow-merge-commits-into-master.md) | Release flow: squash into develop, merge commits into master | Accepted |
+| [0005](0005-cost-guardrails.md) | Cost guardrails: two projects, a budget, a killswitch and a PR gate | Accepted |
