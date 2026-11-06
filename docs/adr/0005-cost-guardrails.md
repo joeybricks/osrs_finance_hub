@@ -33,10 +33,12 @@ recover   relink billing by hand, verify, log it                          ops/ru
 ```
 
 - **Two projects.** `osrs-infra` is the only project with a billing account.
-  `osrs-llm` has none, and Terraform declares it that way, so a plan shows any
-  link someone adds by hand. Whatever runs in `osrs-llm` can only use what
-  works unbilled, so an experiment there can never cost money, and the
-  killswitch only has one project to stop.
+  `osrs-llm` is for the LLM work and uses free-tier models only, so it has no
+  billing account yet, and Terraform declares it that way: a plan shows any
+  link someone adds by hand. Whatever runs there can only use what works
+  unbilled, so an experiment can never cost money, and the killswitch only
+  has one project to stop. If paid models are ever needed, linking billing to
+  `osrs-llm` is a new decision: its own budget, allow-list entry and ADR.
 - **A budget that alerts, never caps.** £2, cost before credits, emailed to
   the billing admin's phone (ADR 0003). Thresholds are early (25% is 50p) so
   the first email arrives while the damage is still small.
