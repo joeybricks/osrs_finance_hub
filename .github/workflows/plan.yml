@@ -9,6 +9,7 @@ on:
     paths:
       - "infra/**"
       - ".github/workflows/plan.yml"
+      - ".github/actions/**"
 
 concurrency:
   group: plan-${{ github.ref }}
@@ -50,7 +51,17 @@ jobs:
       # -lock=false: plan-sa cannot write the .tflock object, and plan never
       # writes state, so no lock is needed.
       - name: terraform plan
-        run: terraform plan -lock=false -input=false -no-color | tee plan.txt
+        run: terraform plan -lock=false -input=false -no-color -out=tfplan | tee plan.txt
+      # plan.json is the same plan as structured data. It holds every attribute
+      # value in clear text, so it stays on the runner: never upload it.
+      - name: Plan to JSON
+        run: terraform show -json tfplan > plan.json
+      # Free-tier policy (OSRS-19): rules in infra/policy. Any deny fails the job.
+      - uses: ./.github/actions/setup-conftest
+      - name: Free-tier policy
+        run: |
+          set -o pipefail
+          conftest test plan.json -p ../../policy --namespace free_tier --no-color | tee policy.txt
       - name: Plan to job summary
         if: always()
         run: |
@@ -58,5 +69,9 @@ jobs:
             echo "## terraform plan: envs/prod"
             echo '```'
             tail -c 60000 plan.txt 2>/dev/null || echo "No plan output."
+            echo '```'
+            echo "## Free-tier policy"
+            echo '```'
+            cat policy.txt 2>/dev/null || echo "Policy did not run."
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
