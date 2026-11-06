@@ -12,11 +12,11 @@ dev = ["ruff>=0.8", "actionlint-py>=1.7", "pre-commit>=4"]
 # Ruff config lives at the root so it covers app/, src/, evals/ and ops/.
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.lint]
 # E/W pycodestyle, F pyflakes (unused imports etc.), I isort,
-# B bugbear (likely bugs), UP pyupgrade (modern syntax for py310).
+# B bugbear (likely bugs), UP pyupgrade (modern syntax for py311).
 select = ["E", "W", "F", "I", "B", "UP"]
 
 [tool.ruff.lint.per-file-ignores]
