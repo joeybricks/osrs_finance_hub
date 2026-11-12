@@ -33,6 +33,8 @@ RUNTIME="runtime-sa@${SA_DOMAIN}"
 
 PROJECT_RES="//cloudresourcemanager.googleapis.com/projects/${PROJECT}"
 BUCKET_RES="//storage.googleapis.com/projects/_/buckets/${BUCKET}"
+REPO_RES="//artifactregistry.googleapis.com/projects/${PROJECT}/locations/us-central1/repositories/osrs-finance-hub"
+sa_res() { echo "//iam.googleapis.com/projects/${PROJECT}/serviceAccounts/$1"; }
 # Looked up at run time so the billing account ID stays out of the repo.
 # Empty if billing is unlinked (killswitch); those checks then report ERROR.
 BILLING_RES="//cloudbilling.googleapis.com/$(gcloud billing projects describe "$PROJECT" \
@@ -95,7 +97,7 @@ check ALLOW "$PLAN" artifactregistry.repositories.get "$PROJECT_RES"
 check DENY  "$PLAN" artifactregistry.repositories.uploadArtifacts "$PROJECT_RES"
 check DENY  "$PLAN" artifactregistry.repositories.create "$PROJECT_RES"
 
-echo "== deployer-sa: prod state and bucket settings only"
+echo "== deployer-sa: prod state and bucket settings"
 check ALLOW "$DEPLOYER" resourcemanager.projects.get "$PROJECT_RES"
 check ALLOW "$DEPLOYER" storage.objects.get "$BUCKET_RES"
 check ALLOW "$DEPLOYER" storage.buckets.update "$BUCKET_RES"
@@ -115,6 +117,20 @@ check DENY  "$DEPLOYER" billing.budgets.update "$BILLING_RES"
 check ALLOW "$DEPLOYER" artifactregistry.repositories.get "$PROJECT_RES"
 check DENY  "$DEPLOYER" artifactregistry.repositories.create "$PROJECT_RES"
 check DENY  "$DEPLOYER" artifactregistry.repositories.setIamPolicy "$PROJECT_RES"
+
+echo "== deployer-sa: ship the app (push to one repo, deploy as runtime-sa, no IAM)"
+check ALLOW "$DEPLOYER" artifactregistry.repositories.uploadArtifacts "$REPO_RES"
+check ALLOW "$DEPLOYER" artifactregistry.tags.update "$REPO_RES"
+check DENY  "$DEPLOYER" artifactregistry.versions.delete "$REPO_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.setIamPolicy "$REPO_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.uploadArtifacts "$PROJECT_RES"
+check ALLOW "$DEPLOYER" run.services.update "$PROJECT_RES"
+check DENY  "$DEPLOYER" run.services.setIamPolicy "$PROJECT_RES"
+check ALLOW "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$RUNTIME")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$KILLSWITCH")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$PLAN")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$DEPLOYER")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.setIamPolicy "$(sa_res "$RUNTIME")"
 
 echo "== killswitch-sa: read and unlink billing only"
 check ALLOW "$KILLSWITCH" resourcemanager.projects.deleteBillingAssignment "$PROJECT_RES"

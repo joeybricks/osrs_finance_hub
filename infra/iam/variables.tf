@@ -16,6 +16,13 @@ variable "llm_project_id" {
   default     = "osrs-llm"
 }
 
+# Created in envs/prod (artifact_registry.tf), so referenced here by name.
+variable "artifact_registry_repository" {
+  description = "Artifact Registry Docker repo for the app's images (envs/prod)."
+  type        = string
+  default     = "osrs-finance-hub"
+}
+
 variable "state_bucket" {
   description = "Terraform state bucket (infra/bootstrap, imported in envs/prod)."
   type        = string
