@@ -7,7 +7,7 @@ members = ["app"]
 # Repo-wide dev tools (lint, workflow lint, git hooks). App-specific test
 # deps stay in app/pyproject.toml. `uv sync` installs both dev groups.
 [dependency-groups]
-dev = ["ruff>=0.8", "actionlint-py>=1.7", "pre-commit>=4"]
+dev = ["ruff>=0.17.4", "actionlint-py>=1.7", "pre-commit>=4"]
 
 # Ruff config lives at the root so it covers app/, src/, evals/ and ops/.
 [tool.ruff]
