@@ -23,6 +23,13 @@ variable "artifact_registry_repository" {
   default     = "osrs-finance-hub"
 }
 
+# Created in envs/prod (cloud_run.tf), so referenced here by name.
+variable "cloud_run_service" {
+  description = "Cloud Run service that runs the app (envs/prod)."
+  type        = string
+  default     = "osrs-finance-hub"
+}
+
 variable "state_bucket" {
   description = "Terraform state bucket (infra/bootstrap, imported in envs/prod)."
   type        = string
