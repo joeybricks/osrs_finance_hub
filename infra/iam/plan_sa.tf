@@ -64,3 +64,13 @@ resource "google_project_iam_member" "plan_pubsub_viewer" {
   role    = "roles/pubsub.viewer"
   member  = local.plan_member
 }
+
+# See the Artifact Registry repo (envs/prod artifact_registry.tf) and its
+# cleanup policy. Reader can also pull images; they hold only the public app.
+# No push, no delete, no IAM. Project-level because the repo is created after
+# this stack.
+resource "google_project_iam_member" "plan_artifactregistry_reader" {
+  project = var.infra_project_id
+  role    = "roles/artifactregistry.reader"
+  member  = local.plan_member
+}

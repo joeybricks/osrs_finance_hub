@@ -28,3 +28,21 @@ resource "google_project_service" "billingbudgets" {
   service            = "billingbudgets.googleapis.com"
   disable_on_destroy = false
 }
+
+# Artifact Registry: holds the app's container images (artifact_registry.tf).
+# Free to have on. Storage is free up to 0.5 GB; the cleanup policy keeps us
+# under it. Pulls by Cloud Run in the same region are free.
+resource "google_project_service" "artifactregistry" {
+  project            = google_project.infra.project_id
+  service            = "artifactregistry.googleapis.com"
+  disable_on_destroy = false
+}
+
+# Cloud Run Admin API: creates and updates the Cloud Run service (OSRS-28).
+# Free to have on; nothing bills until a service runs and gets requests, and
+# the free tier covers our traffic. IAP is left off until access is decided.
+resource "google_project_service" "run" {
+  project            = google_project.infra.project_id
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}

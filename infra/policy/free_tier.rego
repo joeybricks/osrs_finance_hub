@@ -137,6 +137,19 @@ deny contains msg if {
 	msg := sprintf("%s: add at least one cleanup_policies block so old images are deleted", [rc.address])
 }
 
+# KEEP rules only protect versions from DELETE rules; on their own they
+# delete nothing, so a KEEP-only repo grows forever.
+deny contains msg if {
+	some rc in changed
+	rc.type == "google_artifact_registry_repository"
+	policies := object.get(rc.change.after, "cleanup_policies", [])
+	count(policies) > 0
+	every p in policies {
+		p.action != "DELETE"
+	}
+	msg := sprintf("%s: cleanup_policies has no DELETE rule, so nothing is ever deleted (KEEP only protects); add one, e.g. untagged older than 7 days", [rc.address])
+}
+
 # In dry-run mode the cleanup policy only logs what it would delete.
 deny contains msg if {
 	some rc in changed

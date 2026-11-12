@@ -23,6 +23,14 @@ test_current_prod_passes if {
 		create("google_bigquery_dataset.billing_export", "google_bigquery_dataset", {"location": "us-central1"}),
 		create("google_pubsub_topic.budget_alerts", "google_pubsub_topic", {}),
 		create("google_pubsub_subscription.audit", "google_pubsub_subscription", {}),
+		create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {
+			"cleanup_policies": [
+				{"id": "keep-recent-5", "action": "KEEP"},
+				{"id": "delete-untagged", "action": "DELETE"},
+				{"id": "delete-old-tagged", "action": "DELETE"},
+			],
+			"cleanup_policy_dry_run": false,
+		}),
 	])
 }
 
@@ -129,12 +137,20 @@ test_artifact_registry_without_cleanup_denied if {
 	contains(msg, "add at least one cleanup_policies block")
 }
 
-test_artifact_registry_with_cleanup_passes if {
-	count(deny) == 0 with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "keep-5", "action": "KEEP"}], "cleanup_policy_dry_run": false})])
+test_artifact_registry_keep_and_delete_passes if {
+	count(deny) == 0 with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "keep-5", "action": "KEEP"}, {"id": "delete-old", "action": "DELETE"}], "cleanup_policy_dry_run": false})])
+}
+
+# KEEP alone deletes nothing: must be denied, with one message.
+test_artifact_registry_keep_only_denied if {
+	msgs := deny with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "keep-5", "action": "KEEP"}], "cleanup_policy_dry_run": false})])
+	count(msgs) == 1
+	some msg in msgs
+	contains(msg, "no DELETE rule")
 }
 
 test_artifact_registry_dry_run_denied if {
-	msgs := deny with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "keep-5", "action": "KEEP"}], "cleanup_policy_dry_run": true})])
+	msgs := deny with input as plan([create("google_artifact_registry_repository.images", "google_artifact_registry_repository", {"cleanup_policies": [{"id": "delete-old", "action": "DELETE"}], "cleanup_policy_dry_run": true})])
 	count(msgs) == 1
 	some msg in msgs
 	contains(msg, "cleanup_policy_dry_run is true")

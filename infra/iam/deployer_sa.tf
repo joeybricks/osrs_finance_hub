@@ -87,3 +87,13 @@ resource "google_project_iam_member" "deployer_pubsub_viewer" {
   role    = "roles/pubsub.viewer"
   member  = local.deployer_member
 }
+
+# Read the Artifact Registry repo so a future CI apply can refresh it. No admin
+# role: it includes repositories.setIamPolicy, which could grant access. The
+# repo is created locally by an Owner; image push is added with the build
+# story, scoped to the one repo.
+resource "google_project_iam_member" "deployer_artifactregistry_reader" {
+  project = var.infra_project_id
+  role    = "roles/artifactregistry.reader"
+  member  = local.deployer_member
+}
