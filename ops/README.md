@@ -22,3 +22,7 @@ Why the guardrails look like this, and what they can't prevent:
 - [`scripts/killswitch.sh`](scripts/killswitch.sh): unlink billing from an
   allow-listed project; `--dry-run` reports only (OSRS-16). Button:
   `.github/workflows/killswitch.yml` (OSRS-17).
+- [`scripts/smoke-container.sh`](scripts/smoke-container.sh): build and run
+  the app container with `compose.yaml`, check `/health`, a scan, the
+  User-Agent and that only the startup prime hit the wiki; `--keep` leaves it
+  running for a browser check (OSRS-42).
