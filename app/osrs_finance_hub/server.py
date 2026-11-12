@@ -20,6 +20,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import __version__
 from .cache import PriceCache
 from .config import DEFAULT_POSITIONS_FILE, LEGACY_POSITIONS_FILE, Settings
 from .flips import (
@@ -677,6 +678,18 @@ def create_app(settings: Settings) -> FastAPI:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
     @app.middleware("http")
+    async def refresh_stale_prices(request, call_next):
+        """Bring the cache up to date before any /api handler reads it.
+
+        Only /api/* triggers this, so the page, static files and /health
+        never cause a wiki request. Each endpoint is fetched at most once per
+        TTL however many requests arrive together (see PriceCache.ensure_fresh).
+        """
+        if request.url.path.startswith("/api/"):
+            await request.app.state.cache.ensure_fresh()
+        return await call_next(request)
+
+    @app.middleware("http")
     async def always_revalidate_the_ui(request, call_next):
         """Make the browser check whether the page and script have changed.
 
@@ -695,6 +708,18 @@ def create_app(settings: Settings) -> FastAPI:
 
     # Static UI. Mounted last so /api/* wins.
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        """Liveness check for Cloud Run probes and the container smoke test.
+
+        Answers "is this process responding?" and nothing more. It never
+        touches the wiki: if it did, a wiki outage would make the platform
+        restart a healthy container and throw away the cached prices. It sits
+        outside /api/ so the lazy refresh middleware never runs for it. Not
+        /healthz: Cloud Run reserves some paths ending in "z".
+        """
+        return {"status": "ok", "version": __version__}
 
     @app.get("/")
     async def index() -> FileResponse:

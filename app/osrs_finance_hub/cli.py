@@ -47,10 +47,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="minimum profit per unit after tax for a suggestion (default 1)",
     )
     serve.add_argument(
-        "--latest-refresh", type=int, help="seconds between /latest refreshes (default 60)"
+        "--latest-refresh", type=int, help="seconds before cached /latest is refetched (default 60)"
     )
     serve.add_argument(
-        "--hourly-refresh", type=int, help="seconds between /1h and /5m refreshes (default 300)"
+        "--hourly-refresh", type=int, help="seconds before cached /1h and /5m are refetched (default 300)"
     )
     serve.add_argument(
         "--positions-file",

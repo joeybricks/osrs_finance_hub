@@ -1,0 +1,31 @@
+# Keep the build context small and free of local state. The Dockerfile copies
+# only the lock files and app/osrs_finance_hub, but everything not listed here
+# is still uploaded to the builder on every build.
+.git
+.github
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.DS_Store
+
+# Secrets never go into an image (same patterns as .gitignore).
+.env
+.env.*
+.secrets
+secrets
+*.pem
+*.key
+*credentials*.json
+*service-account*.json
+
+# Not part of the app image.
+infra
+docs
+evals
+ops
+src
+work_so_far
+app/tests
+plan.json
