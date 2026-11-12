@@ -1,9 +1,11 @@
-# deployer-sa: runs `terraform apply` on envs/prod after merge (CI, OSRS-12).
+# deployer-sa: runs `terraform apply` on envs/prod after merge (CI, OSRS-12),
+# and ships the app (OSRS-27): pushes the image and deploys it to Cloud Run.
 #
-# Write access only to what envs/prod manages today: the state bucket.
-# Deliberately cannot: change IAM anywhere, enable APIs (that is Joe's step),
-# touch billing, or update/delete either project (project changes in
-# envs/prod hit a 403 and are applied locally by an Owner).
+# Write access only to the state bucket, the image repo and Cloud Run.
+# Deliberately cannot: change IAM anywhere (so it cannot make the service
+# public), enable APIs (that is Joe's step), act as any account except
+# runtime-sa, touch billing, or update/delete either project (project changes
+# in envs/prod hit a 403 and are applied locally by an Owner).
 # When envs/prod gains a service, add that service's narrowest write role here
 # and its viewer role to plan_sa.tf.
 
@@ -90,10 +92,45 @@ resource "google_project_iam_member" "deployer_pubsub_viewer" {
 
 # Read the Artifact Registry repo so a future CI apply can refresh it. No admin
 # role: it includes repositories.setIamPolicy, which could grant access. The
-# repo is created locally by an Owner; image push is added with the build
-# story, scoped to the one repo.
+# repo is created locally by an Owner; image push is granted below, scoped to
+# the one repo.
 resource "google_project_iam_member" "deployer_artifactregistry_reader" {
   project = var.infra_project_id
   role    = "roles/artifactregistry.reader"
   member  = local.deployer_member
+}
+
+# --- Shipping the app (OSRS-27) ---------------------------------------------
+
+# Push images to the app's repo only: upload and create/move tags. writer has
+# no versions.delete (old images go via the repo's cleanup policy) and no
+# setIamPolicy. Bound on the repo itself, not the project.
+resource "google_artifact_registry_repository_iam_member" "deployer_image_push" {
+  project    = var.infra_project_id
+  location   = var.region
+  repository = var.artifact_registry_repository
+  role       = "roles/artifactregistry.writer"
+  member     = local.deployer_member
+}
+
+# Deploy new revisions to Cloud Run. developer, not admin: admin adds
+# run.services.setIamPolicy, which would let the deployer grant allUsers the
+# invoker role and make the app public (undoing OSRS-29). developer can still
+# create and delete services; they hold no data.
+# Project-level for now because the service does not exist yet; OSRS-28
+# narrows this to the one service once it does.
+resource "google_project_iam_member" "deployer_run_developer" {
+  project = var.infra_project_id
+  role    = "roles/run.developer"
+  member  = local.deployer_member
+}
+
+# Launch the service as runtime-sa ("actAs"). Cloud Run requires the deployer
+# to hold this on the account the service runs as. Bound on runtime-sa alone:
+# at project level it would cover every account, so the deployer could act as
+# killswitch-sa, plan-sa or itself and pick up their access.
+resource "google_service_account_iam_member" "deployer_act_as_runtime" {
+  service_account_id = google_service_account.runtime.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = local.deployer_member
 }

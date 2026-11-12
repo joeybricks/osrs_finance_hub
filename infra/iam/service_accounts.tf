@@ -14,8 +14,8 @@ resource "google_service_account" "plan" {
 resource "google_service_account" "deployer" {
   project      = var.infra_project_id
   account_id   = "deployer-sa"
-  display_name = "Terraform apply (envs/prod, merge CI)"
-  description  = "Applies envs/prod after merge. Writes only to services in use; no owner, billing or IAM admin."
+  display_name = "Terraform apply and app deploy (merge CI)"
+  description  = "Applies envs/prod and deploys the app after merge. Writes only to services in use; no owner, billing or IAM admin."
 
   depends_on = [google_project_service.iam]
 }
