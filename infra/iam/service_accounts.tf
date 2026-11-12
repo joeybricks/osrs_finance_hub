@@ -28,3 +28,17 @@ resource "google_service_account" "killswitch" {
 
   depends_on = [google_project_service.iam]
 }
+
+# The identity the Cloud Run container runs as (OSRS-44). Separate from
+# deployer-sa: the deployer ships the service, this is what the running app
+# can reach. No roles yet: the app only calls the public wiki API, so it needs
+# nothing in GCP. E3 adds BigQuery read. Without this, Cloud Run would use the
+# Compute Engine default account, which has project Editor.
+resource "google_service_account" "runtime" {
+  project      = var.infra_project_id
+  account_id   = "runtime-sa"
+  display_name = "Cloud Run runtime (osrs_finance_hub)"
+  description  = "Identity of the running app on Cloud Run. No roles until the app needs one."
+
+  depends_on = [google_project_service.iam]
+}

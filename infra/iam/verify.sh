@@ -19,7 +19,7 @@
 # Rate limit: Troubleshooter allows 15 requests a minute per project, and each
 # check() is one request. Without a gap, a run of 30+ checks gets 429
 # RESOURCE_EXHAUSTED part-way through. check() waits CHECK_DELAY seconds
-# (default 5) before every call after the first, so a full run takes ~3 min.
+# (default 5) before every call after the first, so a full run takes ~4 min.
 # CHECK_DELAY=0 ./verify.sh skips the wait (expect 429s on long runs).
 set -uo pipefail
 
@@ -29,6 +29,7 @@ SA_DOMAIN="${PROJECT}.iam.gserviceaccount.com"
 PLAN="plan-sa@${SA_DOMAIN}"
 DEPLOYER="deployer-sa@${SA_DOMAIN}"
 KILLSWITCH="killswitch-sa@${SA_DOMAIN}"
+RUNTIME="runtime-sa@${SA_DOMAIN}"
 
 PROJECT_RES="//cloudresourcemanager.googleapis.com/projects/${PROJECT}"
 BUCKET_RES="//storage.googleapis.com/projects/_/buckets/${BUCKET}"
@@ -90,6 +91,9 @@ check ALLOW "$PLAN" pubsub.topics.get "$PROJECT_RES"
 check DENY  "$PLAN" pubsub.topics.publish "$PROJECT_RES"
 check DENY  "$PLAN" pubsub.subscriptions.consume "$PROJECT_RES"
 check DENY  "$PLAN" billing.budgets.get "$BILLING_RES"
+check ALLOW "$PLAN" artifactregistry.repositories.get "$PROJECT_RES"
+check DENY  "$PLAN" artifactregistry.repositories.uploadArtifacts "$PROJECT_RES"
+check DENY  "$PLAN" artifactregistry.repositories.create "$PROJECT_RES"
 
 echo "== deployer-sa: prod state and bucket settings only"
 check ALLOW "$DEPLOYER" resourcemanager.projects.get "$PROJECT_RES"
@@ -108,6 +112,9 @@ check DENY  "$DEPLOYER" bigquery.datasets.update "$PROJECT_RES"
 check ALLOW "$DEPLOYER" pubsub.topics.get "$PROJECT_RES"
 check DENY  "$DEPLOYER" pubsub.topics.publish "$PROJECT_RES"
 check DENY  "$DEPLOYER" billing.budgets.update "$BILLING_RES"
+check ALLOW "$DEPLOYER" artifactregistry.repositories.get "$PROJECT_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.create "$PROJECT_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.setIamPolicy "$PROJECT_RES"
 
 echo "== killswitch-sa: read and unlink billing only"
 check ALLOW "$KILLSWITCH" resourcemanager.projects.deleteBillingAssignment "$PROJECT_RES"
@@ -118,6 +125,14 @@ check DENY  "$KILLSWITCH" pubsub.topics.get "$PROJECT_RES"
 check DENY  "$KILLSWITCH" resourcemanager.projects.setIamPolicy "$PROJECT_RES"
 check DENY  "$KILLSWITCH" storage.objects.get "$BUCKET_RES"
 check DENY  "$KILLSWITCH" storage.buckets.update "$BUCKET_RES"
+
+echo "== runtime-sa: no roles yet (E3 adds BigQuery read)"
+check DENY  "$RUNTIME" resourcemanager.projects.get "$PROJECT_RES"
+check DENY  "$RUNTIME" storage.objects.get "$BUCKET_RES"
+check DENY  "$RUNTIME" artifactregistry.repositories.uploadArtifacts "$PROJECT_RES"
+check DENY  "$RUNTIME" run.services.update "$PROJECT_RES"
+check DENY  "$RUNTIME" bigquery.tables.getData "$PROJECT_RES"
+check DENY  "$RUNTIME" iam.serviceAccounts.actAs "$PROJECT_RES"
 
 # Throwaway project for the live killswitch test (OSRS-18). Skipped unless the
 # project exists, so this script passes between tests. Must match
@@ -167,7 +182,7 @@ for proj in "$PROJECT" osrs-llm; do
   mark=PASS; [[ "$enforced" == True ]] || mark=FAIL
   report "$mark" org-policy "disableServiceAccountKeyCreation enforced" "$proj" True "$enforced"
 done
-for sa in "$PLAN" "$DEPLOYER" "$KILLSWITCH"; do
+for sa in "$PLAN" "$DEPLOYER" "$KILLSWITCH" "$RUNTIME"; do
   keys=$(gcloud iam service-accounts keys list --iam-account="$sa" \
     --managed-by=user --format='value(name)' 2>&1 | grep -c . || true)
   mark=PASS; [[ "$keys" == 0 ]] || mark=FAIL
@@ -204,6 +219,8 @@ print(" ".join(members) or "none")
 wif_check "$PLAN" "${SET}/attribute.event_name/pull_request"
 wif_check "$DEPLOYER" "${SET}/attribute.env_on_master/production"
 wif_check "$KILLSWITCH" "${SET}/attribute.env_on_master/killswitch"
+# No GitHub run may act as the runtime account; only Cloud Run uses it.
+wif_check "$RUNTIME" "none"
 
 echo
 echo "Note: ALLOW verdicts cover allow policies; deny policies were not readable (none exist)."

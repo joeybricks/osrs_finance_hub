@@ -21,9 +21,10 @@ Terraform can run. It is made by `bootstrap/` and then imported (OSRS-10).
 
 | Account | Job | Can | Cannot |
 | --- | --- | --- | --- |
-| `plan-sa` | `terraform plan` on PRs | read both projects, the state bucket, BigQuery metadata, enabled APIs and Pub/Sub topics | write anything, read BigQuery rows, pull Pub/Sub messages, see the billing account or budget |
-| `deployer-sa` | `terraform apply` of `envs/prod` after merge | write `prod/` state (IAM condition), update state bucket settings, read BigQuery metadata, enabled APIs and Pub/Sub topics | IAM, enable APIs, billing, change projects or datasets, read BigQuery rows, touch `iam/` state |
+| `plan-sa` | `terraform plan` on PRs | read both projects, the state bucket, BigQuery metadata, enabled APIs, Pub/Sub topics and the Artifact Registry repo | write anything, read BigQuery rows, pull Pub/Sub messages, see the billing account or budget |
+| `deployer-sa` | `terraform apply` of `envs/prod` after merge | write `prod/` state (IAM condition), update state bucket settings, read BigQuery metadata, enabled APIs, Pub/Sub topics and the Artifact Registry repo | IAM, enable APIs, billing, change projects or datasets, read BigQuery rows, touch `iam/` state |
 | `killswitch-sa` | unlink billing when over budget (OSRS-16, button OSRS-17) | `deleteBillingAssignment` + `projects.get` on `osrs-infra` | re-link billing, anything else |
+| `runtime-sa` | identity of the app running on Cloud Run (OSRS-44) | nothing yet (E3 adds BigQuery read) | everything; no GitHub run may act as it |
 
 Roles are hand-picked built-in roles where one is narrow enough, and custom
 roles (`tfStateBucketEditor`, `billingKillswitch`) where every built-in role
