@@ -681,7 +681,7 @@ def create_app(settings: Settings) -> FastAPI:
     async def refresh_stale_prices(request, call_next):
         """Bring the cache up to date before any /api handler reads it.
 
-        Only /api/* triggers this, so the page, static files and /healthz
+        Only /api/* triggers this, so the page, static files and /health
         never cause a wiki request. Each endpoint is fetched at most once per
         TTL however many requests arrive together (see PriceCache.ensure_fresh).
         """

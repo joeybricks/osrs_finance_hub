@@ -213,3 +213,23 @@ def test_health_never_touches_the_wiki(tmp_path, clock):
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
     assert not client.calls, "a health probe must not fetch, or an outage restarts us"
+
+
+async def test_an_unexpected_refresh_error_degrades_like_a_wiki_error(clock):
+    cache, client = make_cache()
+    await cache.start()
+
+    async def broken():
+        raise AttributeError("'list' object has no attribute 'get'")
+
+    client.fetch_latest = broken
+    clock.now += 60
+    await cache.ensure_fresh()  # must not raise, or the /api request would 500
+
+    assert cache.build_flips()[0].margin == 96, "old prices survive"
+    assert "unexpected" in cache.status()["errors"]["latest"]
+    # And it backs off like any failure: no retry on the very next request.
+    calls_before = client.calls["latest"]
+    clock.now += 1
+    await cache.ensure_fresh()
+    assert client.calls["latest"] == calls_before

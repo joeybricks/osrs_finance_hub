@@ -12,7 +12,8 @@ ARG PYTHON_IMAGE=python:3.11-slim-trixie
 # --- builder -----------------------------------------------------------------
 FROM ${PYTHON_IMAGE} AS builder
 
-# uv as a single static binary, pinned to the version used locally and in CI.
+# uv as a single static binary, pinned to the version used locally. (CI's
+# setup-uv takes the latest; uv.lock, not the uv version, decides what installs.)
 COPY --from=ghcr.io/astral-sh/uv:0.11.3 /uv /usr/local/bin/uv
 
 # Compile .pyc files now so the first request after a cold start doesn't pay

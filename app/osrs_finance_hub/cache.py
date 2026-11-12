@@ -235,7 +235,14 @@ class PriceCache:
             # Check again: a request that held the lock before us may have
             # just refreshed it (double-checked locking).
             if self._is_due(name):
-                await self._refresh(name)
+                try:
+                    await self._refresh(name)
+                except Exception as exc:  # a refresh must never fail a request
+                    # e.g. the wiki returns a list where a dict is expected.
+                    # Degrade like a wiki error: keep old data, show the
+                    # banner, back off. last_attempt is already stamped.
+                    self.state[name].last_error = f"unexpected: {exc}"
+                    log.exception("%s refresh failed unexpectedly", name)
 
     async def ensure_fresh(self) -> None:
         """Refresh every endpoint whose TTL has passed, in parallel."""

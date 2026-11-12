@@ -59,7 +59,10 @@ trap cleanup EXIT
 echo "Building and starting a fresh container..."
 # Start clean so the log only holds this run's wiki requests (check 4).
 docker compose down >/dev/null 2>&1 || true
-docker compose up --build -d --quiet-pull 2>&1 | grep -iE "error|fail" || true
+if ! docker compose up --build -d --quiet-pull; then
+  echo "docker compose up failed" >&2
+  exit 2
+fi
 
 # 1. /health
 echo "Checks:"
