@@ -93,7 +93,11 @@ jobs:
             could cost money or leak a secret. Skip style nits that Ruff
             already covers. Use inline comments for specific lines and one
             short top-level summary. If the PR looks good, say so briefly.
+          # --max-turns caps the agent loop (one turn = one tool round trip),
+          # so a confused run can't burn Pro usage. 30 was too tight for a
+          # story-sized PR (#28 took 32 and the job went red despite posting
+          # its review). timeout-minutes above is still the hard stop.
           claude_args: |
             --model claude-fable-5-1
-            --max-turns 30
+            --max-turns 45
             --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
