@@ -677,6 +677,18 @@ def create_app(settings: Settings) -> FastAPI:
         return JSONResponse(status_code=502, content={"detail": str(exc)})
 
     @app.middleware("http")
+    async def refresh_stale_prices(request, call_next):
+        """Bring the cache up to date before any /api handler reads it.
+
+        Only /api/* triggers this, so the page, static files and /healthz
+        never cause a wiki request. Each endpoint is fetched at most once per
+        TTL however many requests arrive together (see PriceCache.ensure_fresh).
+        """
+        if request.url.path.startswith("/api/"):
+            await request.app.state.cache.ensure_fresh()
+        return await call_next(request)
+
+    @app.middleware("http")
     async def always_revalidate_the_ui(request, call_next):
         """Make the browser check whether the page and script have changed.
 

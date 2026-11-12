@@ -1,9 +1,13 @@
-"""In-memory cache with background refresh.
+"""In-memory cache that refreshes lazily, when a request finds it stale.
 
-The whole point: the browser never triggers a wiki request. A background task
-refreshes on a timer, and page loads read whatever is in memory. If a refresh
-fails we keep the previous data and record the error, so the UI can show stale
-numbers with a warning instead of breaking.
+Each bulk endpoint has a time to live (TTL). An /api request calls
+`ensure_fresh()` first; any endpoint whose TTL has passed is fetched once,
+however many requests arrive together. Nothing is fetched while nobody is
+using the app, which suits Cloud Run's request-based billing (CPU is throttled
+between requests, so timer loops would stall) and is gentler on the wiki.
+
+If a refresh fails we keep the previous data and record the error, so the UI
+can show stale numbers with a warning instead of breaking.
 """
 
 from __future__ import annotations
@@ -28,7 +32,7 @@ class EndpointState:
 
     last_success: float | None = None   # unix seconds of the last good fetch
     last_error: str | None = None       # message from the most recent failure
-    last_attempt: float | None = None
+    last_attempt: float | None = None   # when the most recent fetch finished
 
     def age_seconds(self) -> float | None:
         if self.last_success is None:
@@ -40,6 +44,13 @@ class EndpointState:
 # only gains a new point once a day, so re-fetching it every minute is pure
 # waste. These are multiplied by the configured base TTL.
 TIMESERIES_TTL_MULTIPLIER = {"5m": 1, "1h": 5, "6h": 30, "24h": 60}
+
+# The item list only changes when the game updates, so once a day is plenty.
+MAPPING_TTL_SECONDS = 24 * 60 * 60
+
+# After a failed refresh, try again no sooner than this (or the TTL, if
+# shorter). Stops a failed daily /mapping fetch from waiting a whole day.
+ERROR_RETRY_SECONDS = 60
 
 
 @dataclass
@@ -69,8 +80,9 @@ class PriceCache:
         }
 
         self._timeseries: dict[tuple[int, str], TimeseriesEntry] = {}
-        self._tasks: list[asyncio.Task[None]] = []
         self._lock = asyncio.Lock()
+        # One lock per endpoint, so a burst of requests fetches each only once.
+        self._refresh_locks = {name: asyncio.Lock() for name in self.state}
 
     # --- reads ---------------------------------------------------------------
 
@@ -131,13 +143,16 @@ class PriceCache:
 
     async def refresh_mapping(self) -> None:
         state = self.state["mapping"]
-        state.last_attempt = time.time()
         try:
             mapping = await self._client.fetch_mapping()
         except WikiApiError as exc:
             state.last_error = str(exc)
             log.warning("mapping refresh failed: %s", exc)
             return
+        finally:
+            # Stamped when the fetch ends, so requests arriving mid-fetch see
+            # it as due, queue on the lock, and get the fresh data.
+            state.last_attempt = time.time()
         async with self._lock:
             self.mapping = mapping
         state.last_success = time.time()
@@ -146,13 +161,16 @@ class PriceCache:
 
     async def refresh_latest(self) -> None:
         state = self.state["latest"]
-        state.last_attempt = time.time()
         try:
             latest = await self._client.fetch_latest()
         except WikiApiError as exc:
             state.last_error = str(exc)
             log.warning("latest refresh failed, keeping stale data: %s", exc)
             return
+        finally:
+            # Stamped when the fetch ends, so requests arriving mid-fetch see
+            # it as due, queue on the lock, and get the fresh data.
+            state.last_attempt = time.time()
         async with self._lock:
             self.latest = latest
         state.last_success = time.time()
@@ -160,13 +178,16 @@ class PriceCache:
 
     async def refresh_window(self, window: str) -> None:
         state = self.state[window]
-        state.last_attempt = time.time()
         try:
             data, timestamp = await self._client.fetch_average(window)
         except WikiApiError as exc:
             state.last_error = str(exc)
             log.warning("%s refresh failed, keeping stale data: %s", window, exc)
             return
+        finally:
+            # Stamped when the fetch ends, so requests arriving mid-fetch see
+            # it as due, queue on the lock, and get the fresh data.
+            state.last_attempt = time.time()
         async with self._lock:
             if window == "1h":
                 self.hourly = data
@@ -176,41 +197,55 @@ class PriceCache:
         state.last_success = time.time()
         state.last_error = None
 
+    # --- lazy refresh ---------------------------------------------------------
+
+    def _ttl(self, name: str) -> int:
+        if name == "mapping":
+            return MAPPING_TTL_SECONDS
+        if name == "latest":
+            return self._settings.latest_refresh_seconds
+        return self._settings.hourly_refresh_seconds
+
+    def _is_due(self, name: str) -> bool:
+        """Due once the TTL has passed since the last attempt.
+
+        Measured from the attempt, not the last success, so during a wiki
+        outage we retry once per TTL rather than once per request.
+        """
+        state = self.state[name]
+        if state.last_attempt is None:
+            return True
+        wait = self._ttl(name)
+        if state.last_error is not None:
+            wait = min(wait, ERROR_RETRY_SECONDS)
+        return time.time() - state.last_attempt >= wait
+
+    async def _refresh(self, name: str) -> None:
+        if name == "mapping":
+            await self.refresh_mapping()
+        elif name == "latest":
+            await self.refresh_latest()
+        else:
+            await self.refresh_window(name)
+
+    async def _refresh_if_due(self, name: str) -> None:
+        if not self._is_due(name):
+            return
+        async with self._refresh_locks[name]:
+            # Check again: a request that held the lock before us may have
+            # just refreshed it (double-checked locking).
+            if self._is_due(name):
+                await self._refresh(name)
+
+    async def ensure_fresh(self) -> None:
+        """Refresh every endpoint whose TTL has passed, in parallel."""
+        await asyncio.gather(*(self._refresh_if_due(name) for name in self.state))
+
     # --- lifecycle -----------------------------------------------------------
 
     async def start(self) -> None:
-        """Prime the cache, then run the refresh loops in the background."""
-        await self.refresh_mapping()
-        await asyncio.gather(
-            self.refresh_latest(),
-            self.refresh_window("1h"),
-            self.refresh_window("5m"),
-        )
-        self._tasks = [
-            asyncio.create_task(self._loop(self._settings.latest_refresh_seconds, self.refresh_latest)),
-            asyncio.create_task(self._loop(self._settings.hourly_refresh_seconds, self._refresh_windows)),
-        ]
-
-    async def _refresh_windows(self) -> None:
-        await asyncio.gather(self.refresh_window("1h"), self.refresh_window("5m"))
-
-    async def _loop(self, interval: int, job: Any) -> None:
-        """Run `job` every `interval` seconds until cancelled."""
-        while True:
-            await asyncio.sleep(interval)
-            try:
-                await job()
-            except asyncio.CancelledError:
-                raise
-            except Exception:  # a refresh loop must never die
-                log.exception("unexpected error in refresh loop")
+        """Prime the cache so the first page load has data."""
+        await self.ensure_fresh()
 
     async def stop(self) -> None:
-        for task in self._tasks:
-            task.cancel()
-        for task in self._tasks:
-            try:
-                await task
-            except asyncio.CancelledError:
-                pass
-        self._tasks.clear()
+        """Nothing runs in the background any more; kept for the lifespan."""

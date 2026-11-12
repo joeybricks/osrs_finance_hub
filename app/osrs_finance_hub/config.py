@@ -25,7 +25,8 @@ class Settings:
     # reach you if the app misbehaves. An email or Discord handle is fine.
     contact: str = ""
 
-    # How often (seconds) to refresh each endpoint.
+    # Time to live (seconds) for each endpoint. The cache refetches lazily,
+    # on the first /api request after this has passed.
     latest_refresh_seconds: int = 60       # /latest
     hourly_refresh_seconds: int = 300      # /1h and /5m
     timeseries_cache_seconds: int = 60     # per item+timestep, fetched on demand
