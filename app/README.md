@@ -86,6 +86,22 @@ Useful flags:
 | `--no-browser` | Do not open a browser tab. |
 | `--verbose` | Debug logging. |
 
+### In a container
+
+The same app runs in Docker, which is how it is deployed to Cloud Run. Use this
+to check the image before pushing; for everyday work `uv run` is quicker.
+
+```bash
+export OSRS_FINANCE_HUB_CONTACT="you@example.com"
+docker compose up --build        # http://127.0.0.1:8080/
+docker compose down
+```
+
+The image runs `osrs_finance_hub serve`, so the container and `uv run` share one
+entry point and the same settings. Inside the container it listens on `0.0.0.0`
+and on `$PORT` when set. `GET /health` answers without touching the wiki, for
+health probes. Pinned trades are not kept between container restarts.
+
 ## Configure
 
 Every flag has an environment variable, which the flag overrides:

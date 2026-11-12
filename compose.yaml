@@ -1,0 +1,31 @@
+# Run the container locally the way Cloud Run will (OSRS-40).
+#
+#   export OSRS_FINANCE_HUB_CONTACT="you@example.com"   # User-Agent contact
+#   docker compose up --build                           # http://127.0.0.1:8080/
+#   docker compose down
+#
+# For everyday development `uv run osrs_finance_hub serve` is still quicker;
+# this is for checking the image before it is pushed.
+
+services:
+  app:
+    build: .
+    image: osrs-finance-hub:dev
+    # Bound to localhost only, so the app isn't exposed to the rest of the LAN.
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      # Cloud Run injects PORT; set it here so the same code path is used.
+      PORT: "8080"
+      # Read from your shell at start time, never written into the repo.
+      OSRS_FINANCE_HUB_CONTACT: ${OSRS_FINANCE_HUB_CONTACT:-}
+    # No volume on purpose: Cloud Run's disk is in memory and is wiped on
+    # restart, so pinned trades are lost here too (decide before OSRS-28).
+    healthcheck:
+      # The slim image has no curl, so use Python. Cloud Run ignores this;
+      # its probes are configured on the service (OSRS-47).
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/health')"]
+      interval: 30s
+      timeout: 3s
+      start_period: 20s
+      retries: 3
