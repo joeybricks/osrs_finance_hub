@@ -74,3 +74,12 @@ resource "google_project_iam_member" "plan_artifactregistry_reader" {
   role    = "roles/artifactregistry.reader"
   member  = local.plan_member
 }
+
+# See the Cloud Run service (envs/prod cloud_run.tf). viewer is get/list on
+# services, revisions and jobs: no deploy, no invoke, no IAM changes.
+# Project-level so plans also work for services not created yet.
+resource "google_project_iam_member" "plan_run_viewer" {
+  project = var.infra_project_id
+  role    = "roles/run.viewer"
+  member  = local.plan_member
+}
