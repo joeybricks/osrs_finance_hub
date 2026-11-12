@@ -20,6 +20,7 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import __version__
 from .cache import PriceCache
 from .config import DEFAULT_POSITIONS_FILE, LEGACY_POSITIONS_FILE, Settings
 from .flips import (
@@ -707,6 +708,18 @@ def create_app(settings: Settings) -> FastAPI:
 
     # Static UI. Mounted last so /api/* wins.
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+    @app.get("/health")
+    async def health() -> dict[str, str]:
+        """Liveness check for Cloud Run probes and the container smoke test.
+
+        Answers "is this process responding?" and nothing more. It never
+        touches the wiki: if it did, a wiki outage would make the platform
+        restart a healthy container and throw away the cached prices. It sits
+        outside /api/ so the lazy refresh middleware never runs for it. Not
+        /healthz: Cloud Run reserves some paths ending in "z".
+        """
+        return {"status": "ok", "version": __version__}
 
     @app.get("/")
     async def index() -> FileResponse:

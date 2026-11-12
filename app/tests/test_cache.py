@@ -198,3 +198,18 @@ def test_only_api_routes_trigger_a_refresh(tmp_path, clock):
 
     assert http.get("/api/status").json()["have_data"] is True
     assert client.calls == ALL_ENDPOINTS
+
+
+def test_health_never_touches_the_wiki(tmp_path, clock):
+    settings = Settings(contact="test", positions_file=tmp_path / "positions.json")
+    app = create_app(settings)
+    cache, client = make_cache()  # never primed: every endpoint is due
+    client.fail = True            # and the wiki is down
+    app.state.cache = cache
+    app.state.settings = settings
+    app.state.positions = PositionStore(settings.positions_file)
+
+    response = TestClient(app).get("/health")
+    assert response.status_code == 200
+    assert response.json()["status"] == "ok"
+    assert not client.calls, "a health probe must not fetch, or an outage restarts us"
