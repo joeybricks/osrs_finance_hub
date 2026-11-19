@@ -30,6 +30,19 @@ variable "cloud_run_service" {
   default     = "osrs-finance-hub"
 }
 
+# No default, so the addresses stay out of the public repo: set them in the
+# gitignored terraform.tfvars (copy terraform.tfvars.example).
+variable "app_users" {
+  description = "Principals allowed through IAP to the app, e.g. [\"user:you@gmail.com\"] (iap.tf)."
+  type        = list(string)
+
+  validation {
+    # Named people only: allUsers / allAuthenticatedUsers would make the app public.
+    condition     = alltrue([for m in var.app_users : can(regex("^user:[^@]+@[^@]+$", m))])
+    error_message = "Each entry must be \"user:<email>\"."
+  }
+}
+
 variable "state_bucket" {
   description = "Terraform state bucket (infra/bootstrap, imported in envs/prod)."
   type        = string

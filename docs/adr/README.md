@@ -10,3 +10,4 @@ ADR that supersedes the old one.
 | [0003](0003-budget-separate-root-email-alerts.md) | Budget in its own Owner-applied root; email as the phone alert | Accepted |
 | [0004](0004-release-flow-merge-commits-into-master.md) | Release flow: squash into develop, merge commits into master | Accepted |
 | [0005](0005-cost-guardrails.md) | Cost guardrails: two projects, a budget, a killswitch and a PR gate | Accepted |
+| [0006](0006-app-access-iap-direct-on-cloud-run.md) | App access: IAP directly on Cloud Run, users granted in iam/ | Accepted |

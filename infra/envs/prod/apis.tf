@@ -40,9 +40,19 @@ resource "google_project_service" "artifactregistry" {
 
 # Cloud Run Admin API: creates and updates the Cloud Run service (OSRS-28).
 # Free to have on; nothing bills until a service runs and gets requests, and
-# the free tier covers our traffic. IAP is left off until access is decided.
+# the free tier covers our traffic.
 resource "google_project_service" "run" {
   project            = google_project.infra.project_id
   service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
+# Identity-Aware Proxy: Google sign-in in front of the Cloud Run service
+# (OSRS-29, cloud_run.tf). Enabled directly on the service, so no load
+# balancer (which would bill monthly). IAP itself is free. Turning this on also
+# creates the IAP service agent that iam/iap.tf grants run.invoker to.
+resource "google_project_service" "iap" {
+  project            = google_project.infra.project_id
+  service            = "iap.googleapis.com"
   disable_on_destroy = false
 }
