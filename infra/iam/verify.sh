@@ -179,16 +179,20 @@ for b in json.loads(sys.stdin.read() or "{}").get("bindings", []):
 get_policy() {  # get_policy <run|iap>: the service's Cloud Run or IAP allow policy as JSON
   if [[ "$1" == run ]]; then
     gcloud run services get-iam-policy osrs-finance-hub --project="$PROJECT" \
-      --region=us-central1 --format=json 2>&1
+      --region=us-central1 --format=json --verbosity=error 2>&1
   else
     gcloud iap web get-iam-policy --project="$PROJECT" --resource-type=cloud-run \
-      --service=osrs-finance-hub --region=us-central1 --format=json 2>&1
+      --service=osrs-finance-hub --region=us-central1 --format=json --verbosity=error 2>&1
   fi
 }
 for kind in run iap; do
   if ! policy=$(get_policy "$kind"); then
     report FAIL "$kind-policy" "read IAM policy" osrs-finance-hub ok "${policy##*ERROR: }"
-  elif found=$(public_members <<<"$policy"); [[ -z "$found" ]]; then
+  # Unparseable output (e.g. a gcloud notice mixed into the JSON) must FAIL,
+  # never read as "no public members".
+  elif ! found=$(public_members <<<"$policy" 2>&1); then
+    report FAIL "$kind-policy" "parse IAM policy" osrs-finance-hub ok "${found##*$'\n'}"
+  elif [[ -z "$found" ]]; then
     report PASS "$kind-policy" "no allUsers / allAuthenticatedUsers" osrs-finance-hub none none
   else
     report FAIL "$kind-policy" "no allUsers / allAuthenticatedUsers" osrs-finance-hub none "$found"

@@ -43,7 +43,11 @@ no cost. `envs/prod` switches it on; `iam/` holds the grants, so no email
 appears in a public PR plan. The users come from the gitignored
 `iam/terraform.tfvars` (copy `terraform.tfvars.example`); the variable accepts
 only `user:<email>`. Apply `envs/prod` first: it enables the IAP API, which
-creates the service agent that `iam/` grants the invoker role to.
+creates the service agent that `iam/` grants the invoker role to. The agent
+is not always created straight away: if the `iam/` apply fails with "service
+account does not exist", run (as Owner, free)
+`gcloud beta services identity create --service=iap.googleapis.com --project=osrs-infra`
+and apply again.
 `verify.sh` checks that only the IAP agent can invoke and that neither policy
 holds `allUsers` / `allAuthenticatedUsers`.
 
