@@ -157,11 +157,16 @@ check DENY  "$RUNTIME" run.services.update "$PROJECT_RES"
 check DENY  "$RUNTIME" bigquery.tables.getData "$PROJECT_RES"
 check DENY  "$RUNTIME" iam.serviceAccounts.actAs "$PROJECT_RES"
 
-echo "== App access: only IAP may invoke the service (OSRS-29)"
+echo "== App access: IAP (and the deployer) may invoke the service (OSRS-29)"
 PROJECT_NUMBER=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
 IAP_AGENT="service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com"
 check ALLOW "$IAP_AGENT" run.routes.invoke "$RUN_RES"
-check DENY  "$DEPLOYER" run.routes.invoke "$RUN_RES"
+# ALLOW by Joe's decision (OSRS-29): run.developer (OSRS-28) includes
+# run.routes.invoke, and no built-in deploy role leaves it out. Accepted
+# because deployer-sa is usable only by master runs in the production
+# environment (WIF), and OSRS-30's smoke test may need it. Removing it would
+# take a custom copy of run.developer.
+check ALLOW "$DEPLOYER" run.routes.invoke "$RUN_RES"
 check DENY  "$PLAN" run.routes.invoke "$RUN_RES"
 check DENY  "$RUNTIME" run.routes.invoke "$RUN_RES"
 
