@@ -5,17 +5,26 @@
 # `gcloud run deploy` (by hand in OSRS-49, then CI in OSRS-30), and
 # ignore_changes below stops a later apply from rolling them back.
 #
-# Access: no invoker binding here, so only principals with run.routes.invoke
-# (project Owner) can call it; plain requests get 403. Opening it up for the
-# phone is OSRS-29.
+# Access (OSRS-29, ADR 0006): two gates, both must pass.
+#   browser → IAP (Google sign-in; is this user allowed?) → Cloud Run IAM
+#   (is the caller allowed to invoke?) → app
+# IAP admits the users in iam/iap.tf; Cloud Run admits only the IAP service
+# agent (and project Owners). Neither list is in this file: identity grants
+# live in iam/, which is applied locally, so no email reaches a PR plan.
 resource "google_cloud_run_v2_service" "app" {
   project  = google_project.infra.project_id
   name     = "osrs-finance-hub"
   location = var.region
 
-  # Reachable from the internet (needed for the phone on mobile data); IAM
-  # still decides who gets in.
+  # Reachable from the internet (needed for the phone on mobile data); IAP and
+  # IAM still decide who gets in.
   ingress = "INGRESS_TRAFFIC_ALL"
+
+  # Sign-in page in front of the service, no load balancer needed. Google's
+  # Terraform example pairs this with the BETA launch stage, which opts the
+  # service into features Google still labels beta. Free.
+  iap_enabled  = true
+  launch_stage = "BETA"
 
   # The service holds no data; a redeploy rebuilds it in a minute. Off so
   # `terraform destroy` works without a separate apply first.
@@ -91,10 +100,10 @@ resource "google_cloud_run_v2_service" "app" {
     ]
   }
 
-  depends_on = [google_project_service.run]
+  depends_on = [google_project_service.run, google_project_service.iap]
 }
 
 output "cloud_run_url" {
-  description = "Service URL. Needs an identity token until OSRS-29."
+  description = "Service URL. Open it in a browser and sign in with Google (IAP)."
   value       = google_cloud_run_v2_service.app.uri
 }
