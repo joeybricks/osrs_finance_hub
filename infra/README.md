@@ -49,8 +49,8 @@ account does not exist", run (as Owner, free)
 `gcloud beta services identity create --service=iap.googleapis.com --project=osrs-infra`
 and apply again.
 `verify.sh` checks that only the IAP agent and `deployer-sa` can invoke (the
-deployer's `run.developer` includes `run.routes.invoke`; accepted, see the
-comment there) and that neither policy holds `allUsers` / `allAuthenticatedUsers`.
+deployer's `run.developer` includes `run.routes.invoke`; harmless while IAP is
+on, since IAP is checked first) and that neither policy holds `allUsers` / `allAuthenticatedUsers`.
 
 ## CI sign-in: Workload Identity Federation (`iam/wif.tf`, ADR 0002)
 
