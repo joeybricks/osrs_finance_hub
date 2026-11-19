@@ -162,9 +162,9 @@ PROJECT_NUMBER=$(gcloud projects describe "$PROJECT" --format='value(projectNumb
 IAP_AGENT="service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com"
 check ALLOW "$IAP_AGENT" run.routes.invoke "$RUN_RES"
 # ALLOW by Joe's decision (OSRS-29): run.developer (OSRS-28) includes
-# run.routes.invoke, and no built-in deploy role leaves it out. Accepted
-# because deployer-sa is usable only by master runs in the production
-# environment (WIF), and OSRS-30's smoke test may need it. Removing it would
+# run.routes.invoke, and no built-in deploy role leaves it out. Harmless while
+# IAP is on: all traffic passes IAP before this IAM check, and deployer-sa has
+# no IAP grant (a CI smoke test would need one, OSRS-30). Removing it would
 # take a custom copy of run.developer.
 check ALLOW "$DEPLOYER" run.routes.invoke "$RUN_RES"
 check DENY  "$PLAN" run.routes.invoke "$RUN_RES"
