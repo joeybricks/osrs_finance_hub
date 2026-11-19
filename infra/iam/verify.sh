@@ -157,6 +157,44 @@ check DENY  "$RUNTIME" run.services.update "$PROJECT_RES"
 check DENY  "$RUNTIME" bigquery.tables.getData "$PROJECT_RES"
 check DENY  "$RUNTIME" iam.serviceAccounts.actAs "$PROJECT_RES"
 
+echo "== App access: only IAP may invoke the service (OSRS-29)"
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
+IAP_AGENT="service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com"
+check ALLOW "$IAP_AGENT" run.routes.invoke "$RUN_RES"
+check DENY  "$DEPLOYER" run.routes.invoke "$RUN_RES"
+check DENY  "$PLAN" run.routes.invoke "$RUN_RES"
+check DENY  "$RUNTIME" run.routes.invoke "$RUN_RES"
+
+# Troubleshooter takes one principal at a time, so it cannot rule out the
+# public members. Read both policies and look for them directly.
+public_members() {  # prints any allUsers / allAuthenticatedUsers in a policy (JSON on stdin)
+  python3 -c '
+import json, sys
+public = {"allUsers", "allAuthenticatedUsers"}
+for b in json.loads(sys.stdin.read() or "{}").get("bindings", []):
+    for m in public.intersection(b["members"]):
+        print(b["role"] + "|" + m)
+'
+}
+get_policy() {  # get_policy <run|iap>: the service's Cloud Run or IAP allow policy as JSON
+  if [[ "$1" == run ]]; then
+    gcloud run services get-iam-policy osrs-finance-hub --project="$PROJECT" \
+      --region=us-central1 --format=json 2>&1
+  else
+    gcloud iap web get-iam-policy --project="$PROJECT" --resource-type=cloud-run \
+      --service=osrs-finance-hub --region=us-central1 --format=json 2>&1
+  fi
+}
+for kind in run iap; do
+  if ! policy=$(get_policy "$kind"); then
+    report FAIL "$kind-policy" "read IAM policy" osrs-finance-hub ok "${policy##*ERROR: }"
+  elif found=$(public_members <<<"$policy"); [[ -z "$found" ]]; then
+    report PASS "$kind-policy" "no allUsers / allAuthenticatedUsers" osrs-finance-hub none none
+  else
+    report FAIL "$kind-policy" "no allUsers / allAuthenticatedUsers" osrs-finance-hub none "$found"
+  fi
+done
+
 # Throwaway project for the live killswitch test (OSRS-18). Skipped unless the
 # project exists, so this script passes between tests. Must match
 # infra/sandbox/killswitch_test/variables.tf.

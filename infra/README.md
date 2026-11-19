@@ -31,6 +31,22 @@ roles (`tfStateBucketEditor`, `billingKillswitch`) where every built-in role
 also allows something dangerous. No service account keys: CI uses Workload
 Identity Federation (below).
 
+## App access: IAP (`envs/prod/cloud_run.tf`, `iam/iap.tf`, ADR 0006)
+
+```
+browser --Google sign-in--> IAP: user in app_users? (roles/iap.httpsResourceAccessor)
+  --as the IAP service agent--> Cloud Run: run.routes.invoke? (roles/run.invoker) --> app
+```
+
+IAP runs directly on the Cloud Run service, so there is no load balancer and
+no cost. `envs/prod` switches it on; `iam/` holds the grants, so no email
+appears in a public PR plan. The users come from the gitignored
+`iam/terraform.tfvars` (copy `terraform.tfvars.example`); the variable accepts
+only `user:<email>`. Apply `envs/prod` first: it enables the IAP API, which
+creates the service agent that `iam/` grants the invoker role to.
+`verify.sh` checks that only the IAP agent can invoke and that neither policy
+holds `allUsers` / `allAuthenticatedUsers`.
+
 ## CI sign-in: Workload Identity Federation (`iam/wif.tf`, ADR 0002)
 
 ```
