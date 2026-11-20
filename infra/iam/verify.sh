@@ -204,6 +204,18 @@ for kind in run iap; do
   fi
 done
 
+# The custom OAuth client was made in the console (ADR 0006), so Terraform
+# can't see it. Without it IAP falls back to the Google-managed client, which
+# refuses Gmail accounts. Reads only the client ID; the secret is never shown.
+if ! settings=$(gcloud iap settings get --project="$PROJECT" --resource-type=cloud-run \
+    --service=osrs-finance-hub --region=us-central1 --format=json --verbosity=error 2>&1); then
+  report FAIL iap-client "read IAP settings" osrs-finance-hub ok "${settings##*ERROR: }"
+elif python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("accessSettings",{}).get("oauthSettings",{}).get("clientId") else 1)' <<<"$settings" 2>/dev/null; then
+  report PASS iap-client "custom OAuth client set" osrs-finance-hub set set
+else
+  report FAIL iap-client "custom OAuth client set" osrs-finance-hub set "none (or unparseable)"
+fi
+
 # Throwaway project for the live killswitch test (OSRS-18). Skipped unless the
 # project exists, so this script passes between tests. Must match
 # infra/sandbox/killswitch_test/variables.tf.

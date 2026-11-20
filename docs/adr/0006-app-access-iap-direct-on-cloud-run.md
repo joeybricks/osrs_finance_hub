@@ -26,8 +26,9 @@ Google's docs disagree on whether this blocks it.
 
 ## Decision
 
-- IAP directly on the Cloud Run service: `iap_enabled = true` with
-  `launch_stage = "BETA"`, as in Google's Terraform example (`envs/prod`).
+- IAP directly on the Cloud Run service: `iap_enabled = true` (`envs/prod`).
+  Originally with `launch_stage = "BETA"` as in Google's example; dropped,
+  see the update below.
 - Two grants, both on the service only, in `iam/iap.tf`:
   `roles/iap.httpsResourceAccessor` for the users in `app_users`, and
   `roles/run.invoker` for the IAP service agent. Users get no invoker role.
@@ -51,5 +52,31 @@ Google's docs disagree on whether this blocks it.
 - IAP adds a little latency per request; fine for one user.
 - Some integrations (for example Pub/Sub push) can't call an IAP-protected
   service. None are planned; a new ADR would revisit this.
-- The service runs at the BETA launch stage. If `gcloud run deploy` (OSRS-30)
-  changes it, the next plan shows drift: watch the first CI deploy.
+- ~~The service runs at the BETA launch stage; watch the first CI deploy for
+  drift.~~ No longer applies (update below).
+
+## Update 2026-11-20: Gmail refused, custom OAuth client
+
+- **IAP refused Joe's Gmail** with every grant correct. The org is a
+  *standalone organization*: no domain and no user directory. The
+  Google-managed client is an Internal app and admits only directory members;
+  a personal Google account never is one, even as project Owner.
+- **The org-user fallback is not possible:** Cloud Identity needs a domain we
+  own (about £10 a year, over budget) and moving the projects to a new org.
+- **Decision (Joe): custom OAuth client** (the fallback first rejected).
+  - Consent screen with an External audience, kept in **Testing** status with
+    Joe as the only test user. That's a second gate on top of `app_users`.
+  - Client auto-generated from the IAP page and set on **this service only**,
+    not the whole project.
+  - It's a one-off console step (Google can't create OAuth clients through
+    an API), like the bootstrap state bucket. IAP holds the secret; it is not
+    in the repo or Terraform state. `google_iap_settings` was not used,
+    because it would put the secret in state and in public plan comments.
+  - `verify.sh` checks that the service still has a custom client.
+- **`launch_stage = "BETA"` dropped.** The console saved the service at GA
+  and IAP stayed on, so BETA isn't needed. This also removes the drift risk
+  from `gcloud run deploy` (OSRS-30).
+- **Adding a user:** add them as a test user on the consent screen, then add
+  them to `app_users` and apply `iam/`. Testing allows up to 100 test users.
+  Opening the app to anyone would mean publishing the consent screen and
+  probably in-app sign-in instead of IAP; a new ADR would cover that.

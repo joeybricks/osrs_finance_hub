@@ -48,9 +48,18 @@ is not always created straight away: if the `iam/` apply fails with "service
 account does not exist", run (as Owner, free)
 `gcloud beta services identity create --service=iap.googleapis.com --project=osrs-infra`
 and apply again.
+
+Sign-in uses a **custom External OAuth client**, because the Google-managed
+default admits only org directory members and refuses Gmail accounts (ADR
+0006 update). The client was made once in the console and isn't in
+Terraform: Google Auth Platform → Branding (Audience External, status
+Testing), then Security → Identity-Aware Proxy → Applications → the service
+→ Settings → custom OAuth credentials → Auto generate. A new user must be a
+test user on the consent screen *and* in `app_users`.
 `verify.sh` checks that only the IAP agent and `deployer-sa` can invoke (the
 deployer's `run.developer` includes `run.routes.invoke`; harmless while IAP is
-on, since IAP is checked first) and that neither policy holds `allUsers` / `allAuthenticatedUsers`.
+on, since IAP is checked first), that neither policy holds `allUsers` / `allAuthenticatedUsers`,
+and that the service still has the custom OAuth client.
 
 ## CI sign-in: Workload Identity Federation (`iam/wif.tf`, ADR 0002)
 
