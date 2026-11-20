@@ -22,10 +22,14 @@ on:
       - "Dockerfile"
       - ".dockerignore"
       - ".github/workflows/deploy.yml"
+  # "Run workflow" button: redeploy without an app change (e.g. the first
+  # deploy). Same gates: approval, and WIF only trusts runs on master.
+  workflow_dispatch:
 
 # One deploy at a time. A newer release cancels an older one still waiting
-# or running: the newer commit already contains the older changes, and a
-# cancelled `gcloud run deploy` leaves the current revision serving.
+# or running: the newer commit already contains the older changes. A run
+# cancelled mid-deploy may still finish its rollout server-side; the newer
+# run then deploys over it.
 concurrency:
   group: deploy-prod
   cancel-in-progress: true
@@ -70,7 +74,10 @@ jobs:
         run: |
           set -euo pipefail
           tag="${IMAGE}:${GITHUB_SHA::7}"
-          docker build -t "$tag" .
+          # No provenance/SBOM attestations: without them the push is a single
+          # image manifest, so the digest below is the image's own (not an
+          # index wrapping it) and each release adds one registry version.
+          docker build --provenance=false --sbom=false -t "$tag" .
           docker push "$tag"
           # Deploy by digest (content hash), not tag: a tag can be moved to
           # other bytes later, a digest can't. Rollback = redeploy an old one.
