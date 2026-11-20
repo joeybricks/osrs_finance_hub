@@ -106,10 +106,14 @@ resource "google_cloud_run_v2_service" "app" {
   lifecycle {
     # Deploys own the image from now on. client/client_version are stamped by
     # gcloud on every deploy; without these the next plan would undo the deploy.
+    # Traffic is set by hand with gcloud (Joe, OSRS-62): rollbacks and gradual
+    # rollouts pin it to named revisions, and without this an apply would put
+    # it back to 100% LATEST, undoing a rollback (ops/runbooks/rollback.md).
     ignore_changes = [
       template[0].containers[0].image,
       client,
       client_version,
+      traffic,
     ]
   }
 

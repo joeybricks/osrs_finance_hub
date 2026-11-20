@@ -100,13 +100,10 @@ pushes `osrs-finance-hub:<short sha>` and deploys it by digest as
 `deployer-sa`. The smoke test checks the newest revision is Ready, gets 100%
 of traffic and runs the pushed digest. It does not call the URL (IAP).
 
-Rollback: redeploy an earlier digest (the registry keeps the 5 newest).
-
-```bash
-gcloud artifacts docker images list us-central1-docker.pkg.dev/osrs-infra/osrs-finance-hub --include-tags
-gcloud run deploy osrs-finance-hub --project osrs-infra --region us-central1 \
-  --image us-central1-docker.pkg.dev/osrs-infra/osrs-finance-hub/osrs-finance-hub@sha256:<digest>
-```
+Rollback: [`ops/runbooks/rollback.md`](../ops/runbooks/rollback.md). Point
+traffic back at the last good revision with `gcloud run services
+update-traffic` (seconds, no rebuild). Traffic is set by hand; Terraform
+ignores it (OSRS-62), so an apply never undoes a rollback.
 
 ## Budget (`billing/`)
 

@@ -12,6 +12,8 @@ Manual steps that can't be done through Terraform.
   OSRS-21): set-up, what each threshold means, **a budget alert fired**.
 - [Billing killswitch](runbooks/killswitch.md) (OSRS-16 to OSRS-18, OSRS-21):
   how to press it, **the killswitch has fired**, **restore billing**, live test.
+- [Roll back the app](runbooks/rollback.md) (OSRS-62): point traffic at the
+  last good revision, deploy the fix, move traffic back (all at once or gradually).
 
 Why the guardrails look like this, and what they can't prevent:
 [ADR 0005](../docs/adr/0005-cost-guardrails.md).
