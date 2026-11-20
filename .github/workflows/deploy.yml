@@ -1,0 +1,119 @@
+name: Deploy
+
+# Ships the app to Cloud Run when a release lands on master (OSRS-30).
+# Updates the container image only. Everything else about the service
+# (CPU, scaling, IAP, probes) belongs to Terraform in infra/envs/prod, which
+# ignores the image so the two never fight (cloud_run.tf ignore_changes).
+#
+#   push to master → approval (production environment) → WIF sign-in as
+#   deployer-sa → build → push :<short sha> → deploy by digest → check
+#
+# Built on GitHub's runner, not Cloud Build, so the build costs nothing.
+on:
+  push:
+    branches: [master]
+    # Only changes that alter the image redeploy (the Dockerfile's COPY lines).
+    # Not a required check, so filtering on the trigger is safe here.
+    paths:
+      - "app/osrs_finance_hub/**"
+      - "app/pyproject.toml"
+      - "pyproject.toml"
+      - "uv.lock"
+      - "Dockerfile"
+      - ".dockerignore"
+      - ".github/workflows/deploy.yml"
+
+# One deploy at a time. A newer release cancels an older one still waiting
+# or running: the newer commit already contains the older changes, and a
+# cancelled `gcloud run deploy` leaves the current revision serving.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  id-token: write  # lets the job ask GitHub for an OIDC token; nothing else
+
+env:
+  WIF_PROVIDER: projects/364165303320/locations/global/workloadIdentityPools/github/providers/github-actions
+  DEPLOYER_SA: deployer-sa@osrs-infra.iam.gserviceaccount.com
+  PROJECT: osrs-infra
+  REGION: us-central1
+  SERVICE: osrs-finance-hub
+  IMAGE: us-central1-docker.pkg.dev/osrs-infra/osrs-finance-hub/osrs-finance-hub
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Two gates: GitHub pauses here for a reviewer's approval and allows only
+    # master; GCP then checks the same branch and environment in the OIDC
+    # token before lending deployer-sa (infra/iam/wif.tf, env_on_master).
+    environment: production
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      # Swaps the OIDC token for a 1-hour deployer-sa token. gcloud is
+      # already on the runner image and picks the credentials up from here.
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093  # v3.0.0
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.DEPLOYER_SA }}
+      # Docker asks gcloud for a token when it talks to Artifact Registry.
+      - name: Docker login to Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+      # Tag by commit (same naming as the first manual deploy, OSRS-49) so an
+      # image can be traced to its code. Runners are amd64, like Cloud Run.
+      - name: Build and push
+        id: image
+        run: |
+          set -euo pipefail
+          tag="${IMAGE}:${GITHUB_SHA::7}"
+          docker build -t "$tag" .
+          docker push "$tag"
+          # Deploy by digest (content hash), not tag: a tag can be moved to
+          # other bytes later, a digest can't. Rollback = redeploy an old one.
+          ref=$(docker inspect --format '{{index .RepoDigests 0}}' "$tag")
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+          echo "Pushed $tag as $ref"
+      # Image only; no other flags, so nothing Terraform owns is changed.
+      # Waits until the new revision passes its /health startup probe.
+      - name: Deploy to Cloud Run
+        env:
+          REF: ${{ steps.image.outputs.ref }}
+        run: |
+          gcloud run deploy "$SERVICE" --project "$PROJECT" --region "$REGION" \
+            --image "$REF" --quiet
+      # Smoke test without going through IAP (that would need extra grants; a
+      # follow-up). Checks the service is running our image: the newest
+      # revision is Ready (startup probe passed), serves 100% of traffic, and
+      # the service's image is the digest just pushed.
+      - name: Smoke test
+        env:
+          REF: ${{ steps.image.outputs.ref }}
+        run: |
+          set -euo pipefail
+          svc=$(gcloud run services describe "$SERVICE" --project "$PROJECT" \
+            --region "$REGION" --format=json)
+          created=$(jq -r '.status.latestCreatedRevisionName' <<<"$svc")
+          ready=$(jq -r '.status.latestReadyRevisionName' <<<"$svc")
+          image=$(jq -r '.spec.template.spec.containers[0].image' <<<"$svc")
+          traffic=$(jq -r --arg r "$ready" \
+            '[.status.traffic[] | select(.revisionName == $r or .latestRevision == true) | .percent] | add // 0' <<<"$svc")
+          url=$(jq -r '.status.url' <<<"$svc")
+          {
+            echo "## Deploy: $SERVICE"
+            echo "| Check | Value |"
+            echo "| --- | --- |"
+            echo "| Image | \`$image\` |"
+            echo "| Newest revision | \`$created\` |"
+            echo "| Newest ready revision | \`$ready\` |"
+            echo "| Traffic to it | ${traffic}% |"
+            echo "| URL (IAP sign-in) | $url |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          fail=0
+          [ "$image" = "$REF" ] || { echo "::error::Service image is $image, expected $REF"; fail=1; }
+          [ "$created" = "$ready" ] || { echo "::error::Newest revision $created is not Ready (ready: $ready)"; fail=1; }
+          [ "$traffic" = "100" ] || { echo "::error::Newest ready revision gets ${traffic}% of traffic, expected 100"; fail=1; }
+          exit "$fail"

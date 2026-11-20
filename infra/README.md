@@ -88,6 +88,26 @@ cd infra/iam && terraform plan && terraform apply
 ./verify.sh      # Policy Troubleshooter: every check must PASS
 ```
 
+## App deploys (`.github/workflows/deploy.yml`, OSRS-30)
+
+Two lanes: CI ships the **image**, Terraform owns **everything else** about
+the service (`ignore_changes` on the image in `cloud_run.tf`).
+
+A push to `master` that changes the image's inputs (`app/osrs_finance_hub/`,
+the pyproject files, `uv.lock`, `Dockerfile`, `.dockerignore`) waits for
+approval in the `production` environment, then builds on the GitHub runner,
+pushes `osrs-finance-hub:<short sha>` and deploys it by digest as
+`deployer-sa`. The smoke test checks the newest revision is Ready, gets 100%
+of traffic and runs the pushed digest. It does not call the URL (IAP).
+
+Rollback: redeploy an earlier digest (the registry keeps the 5 newest).
+
+```bash
+gcloud artifacts docker images list us-central1-docker.pkg.dev/osrs-infra/osrs-finance-hub --include-tags
+gcloud run deploy osrs-finance-hub --project osrs-infra --region us-central1 \
+  --image us-central1-docker.pkg.dev/osrs-infra/osrs-finance-hub/osrs-finance-hub@sha256:<digest>
+```
+
 ## Budget (`billing/`)
 
 The budget lives on the billing account, outside both projects. CI can't read
