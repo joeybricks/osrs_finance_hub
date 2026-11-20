@@ -37,6 +37,18 @@ resource "google_cloud_run_v2_service" "app" {
     # would use the Compute Engine default account, which has project Editor.
     service_account = local.runtime_sa_email
 
+    # Hardening (OSRS-60). Defaults are 300s and 80.
+    # Timeout: the slowest request, the long-term scan (25 /timeseries calls,
+    # 3 at a time, so 9 rounds), takes seconds. A slow wiki (~7s a call) or a
+    # hanging one (20s httpx timeout) passes 60s; the UI shows the 504 as an
+    # error, which beats holding a billed request open.
+    timeout = "60s"
+    # Concurrency: each in-flight /api/flips holds about 5 MB while it builds
+    # the ~4 MB payload. Measured locally: 20 at once peaks at ~175 MB, 40 at
+    # ~280 MB, so 80 could run the 512Mi instance out of memory. One user
+    # peaks at about 8 (page load, 3 rating workers, the 60s poll).
+    max_instance_request_concurrency = 20
+
     scaling {
       min_instance_count = 0 # idle = no instance = free
       # One instance: pins (positions.json) and the price cache live in each
@@ -95,10 +107,14 @@ resource "google_cloud_run_v2_service" "app" {
   lifecycle {
     # Deploys own the image from now on. client/client_version are stamped by
     # gcloud on every deploy; without these the next plan would undo the deploy.
+    # Traffic is set by hand with gcloud (Joe, OSRS-62): rollbacks and gradual
+    # rollouts pin it to named revisions, and without this an apply would put
+    # it back to 100% LATEST, undoing a rollback (ops/runbooks/rollback.md).
     ignore_changes = [
       template[0].containers[0].image,
       client,
       client_version,
+      traffic,
     ]
   }
 
