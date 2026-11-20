@@ -39,8 +39,9 @@ resource "google_cloud_run_v2_service" "app" {
 
     # Hardening (OSRS-60). Defaults are 300s and 80.
     # Timeout: the slowest request, the long-term scan (25 /timeseries calls,
-    # 3 at a time), takes seconds. Only a hanging wiki (20s httpx timeout per
-    # call) would pass 60s; then a 504 beats holding a billed request open.
+    # 3 at a time, so 9 rounds), takes seconds. A slow wiki (~7s a call) or a
+    # hanging one (20s httpx timeout) passes 60s; the UI shows the 504 as an
+    # error, which beats holding a billed request open.
     timeout = "60s"
     # Concurrency: each in-flight /api/flips holds about 5 MB while it builds
     # the ~4 MB payload. Measured locally: 20 at once peaks at ~175 MB, 40 at

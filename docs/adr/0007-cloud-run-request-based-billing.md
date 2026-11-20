@@ -56,10 +56,12 @@ with long gaps: one request a minute while a tab is open. Estimate for 4h a
 day:
 
 - Request-based: about 60 requests/hour × ~1s ≈ 60 vCPU-seconds an hour, so
-  ~7,200 a month. The free tier is 180,000 vCPU-seconds a month.
+  ~7,200 a month. The request-based free tier is 180,000 vCPU-seconds a
+  month.
 - Instance-based: the instance stays up the whole session, plus idle time
   before it scales down. 4h × 3,600s × 30 ≈ 430,000 vCPU-seconds a month,
-  over the free tier.
+  well past 180,000. Instance-based may have a smaller free allowance or none
+  (not checked); either way most of it would be billed.
 
 Instance-based only pays off for steady traffic or real background work.
 Neither applies here.
@@ -74,7 +76,9 @@ the same code path.
 
 ### Hardening (OSRS-31)
 - Request timeout 60s, concurrency 20 (OSRS-60): concurrency 80 could run the
-  512Mi instance out of memory.
+  512Mi instance out of memory. After a timeout the handler keeps running in
+  the container, but with no request active its CPU is throttled, so it
+  stalls until the next request (the 60s poll) wakes the instance.
 - Two lanes (OSRS-30, OSRS-62): CI ships the image; Terraform owns the rest of
   the service; traffic is set by hand with gcloud for rollbacks and gradual
   rollouts (`ops/runbooks/rollback.md`).

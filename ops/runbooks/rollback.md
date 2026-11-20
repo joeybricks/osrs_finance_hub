@@ -31,10 +31,12 @@ Newest first. Pick the one before the broken one. **Never** pick
 `osrs-finance-hub-00001-wps`: it is Google's `hello` placeholder from the
 first Terraform apply.
 
-The revision's image must still be in Artifact Registry: the cleanup policy
-keeps the 5 newest images and deletes older ones after 7 days. The service
-scales to zero, so every cold start pulls the image again; a revision whose
-image is gone fails to start. Check:
+Cloud Run keeps its own copy of a revision's image, so cold starts don't pull
+from Artifact Registry and its cleanup (keep the 5 newest, delete older ones
+after 7 days) doesn't break a revision that is serving. Google only promises
+that copy "as long as it is used by a serving revision", though, and a
+rollback target has had 0% traffic. As a precaution, check its digest is
+still in the registry; it must be for the "lasting fix" below anyway:
 
 ```bash
 gcloud artifacts docker images list \
@@ -87,6 +89,12 @@ gcloud run services update-traffic osrs-finance-hub \
 
 Each request is routed separately, so with one user a 10% split means about
 1 in 10 page loads hits the new revision, not 10% of users.
+
+**Prefer all at once for this app.** `max_instance_count = 1` is per revision,
+so a split runs two instances, each with its own pins and price cache. Until
+`--to-latest`, a pin can vanish from one page load to the next, the two
+revisions can show different prices, and the wiki sees two clients refreshing.
+Use a split only for a short check.
 
 **Finish with `--to-latest`.** Until then traffic stays pinned and later deploys
 get 0%.
