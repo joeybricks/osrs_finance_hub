@@ -68,8 +68,9 @@ Google's docs disagree on whether this blocks it.
     Joe as the only test user. That's a second gate on top of `app_users`.
   - Client auto-generated from the IAP page and set on **this service only**,
     not the whole project.
-  - It's a one-off console step (Google can't create OAuth clients through
-    an API), like the bootstrap state bucket. IAP holds the secret; it is not
+  - It's a one-off console step, like the bootstrap state bucket. Google
+    can't create *External* OAuth clients through an API: `google_iap_client`
+    exists, but only for Internal (org-only) audiences. IAP holds the secret; it is not
     in the repo or Terraform state. `google_iap_settings` was not used,
     because it would put the secret in state and in public plan comments.
   - `verify.sh` checks that the service still has a custom client.

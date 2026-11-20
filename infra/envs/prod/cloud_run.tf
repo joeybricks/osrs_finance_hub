@@ -24,7 +24,8 @@ resource "google_cloud_run_v2_service" "app" {
   # No launch_stage: Google's example sets BETA, but the API keeps IAP on at
   # the default GA (the console reset it to GA without turning IAP off).
   # The sign-in client is a custom External OAuth client, made once in the
-  # console and set on this service only; Terraform can't create it (ADR 0006).
+  # console and set on this service only. Terraform can't create External
+  # clients (google_iap_client is Internal-only; ADR 0006).
   iap_enabled = true
 
   # The service holds no data; a redeploy rebuilds it in a minute. Off so

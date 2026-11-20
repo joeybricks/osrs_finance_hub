@@ -52,7 +52,8 @@ and apply again.
 Sign-in uses a **custom External OAuth client**, because the Google-managed
 default admits only org directory members and refuses Gmail accounts (ADR
 0006 update). The client was made once in the console and isn't in
-Terraform: Google Auth Platform → Branding (Audience External, status
+Terraform (no API creates *External* clients; `google_iap_client` is
+Internal-only): Google Auth Platform → Branding (Audience External, status
 Testing), then Security → Identity-Aware Proxy → Applications → the service
 → Settings → custom OAuth credentials → Auto generate. A new user must be a
 test user on the consent screen *and* in `app_users`.
