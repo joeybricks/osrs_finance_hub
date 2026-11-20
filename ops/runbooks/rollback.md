@@ -39,6 +39,10 @@ rollback target has had 0% traffic. As a precaution, check its digest is
 still in the registry; it must be for the "lasting fix" below anyway:
 
 ```bash
+# the revision's image digest
+gcloud run revisions describe <good-revision> --project osrs-infra \
+  --region us-central1 --format='value(spec.containers[0].image)'
+# is that digest still listed?
 gcloud artifacts docker images list \
   us-central1-docker.pkg.dev/osrs-infra/osrs-finance-hub --include-tags
 ```
