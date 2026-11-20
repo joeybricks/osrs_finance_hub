@@ -37,6 +37,17 @@ resource "google_cloud_run_v2_service" "app" {
     # would use the Compute Engine default account, which has project Editor.
     service_account = local.runtime_sa_email
 
+    # Hardening (OSRS-60). Defaults are 300s and 80.
+    # Timeout: the slowest request, the long-term scan (25 /timeseries calls,
+    # 3 at a time), takes seconds. Only a hanging wiki (20s httpx timeout per
+    # call) would pass 60s; then a 504 beats holding a billed request open.
+    timeout = "60s"
+    # Concurrency: each in-flight /api/flips holds about 5 MB while it builds
+    # the ~4 MB payload. Measured locally: 20 at once peaks at ~175 MB, 40 at
+    # ~280 MB, so 80 could run the 512Mi instance out of memory. One user
+    # peaks at about 8 (page load, 3 rating workers, the 60s poll).
+    max_instance_request_concurrency = 20
+
     scaling {
       min_instance_count = 0 # idle = no instance = free
       # One instance: pins (positions.json) and the price cache live in each
