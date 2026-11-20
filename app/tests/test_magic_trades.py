@@ -111,6 +111,9 @@ class StubCache:
     def build_flips(self):
         return self.flips
 
+    async def ensure_fresh(self) -> None:
+        pass  # fixed prices: nothing to refresh
+
 
 @pytest.fixture
 def client(tmp_path):

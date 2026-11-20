@@ -19,7 +19,7 @@
 # Rate limit: Troubleshooter allows 15 requests a minute per project, and each
 # check() is one request. Without a gap, a run of 30+ checks gets 429
 # RESOURCE_EXHAUSTED part-way through. check() waits CHECK_DELAY seconds
-# (default 5) before every call after the first, so a full run takes ~3 min.
+# (default 5) before every call after the first, so a full run takes ~4 min.
 # CHECK_DELAY=0 ./verify.sh skips the wait (expect 429s on long runs).
 set -uo pipefail
 
@@ -29,9 +29,13 @@ SA_DOMAIN="${PROJECT}.iam.gserviceaccount.com"
 PLAN="plan-sa@${SA_DOMAIN}"
 DEPLOYER="deployer-sa@${SA_DOMAIN}"
 KILLSWITCH="killswitch-sa@${SA_DOMAIN}"
+RUNTIME="runtime-sa@${SA_DOMAIN}"
 
 PROJECT_RES="//cloudresourcemanager.googleapis.com/projects/${PROJECT}"
 BUCKET_RES="//storage.googleapis.com/projects/_/buckets/${BUCKET}"
+REPO_RES="//artifactregistry.googleapis.com/projects/${PROJECT}/locations/us-central1/repositories/osrs-finance-hub"
+RUN_RES="//run.googleapis.com/projects/${PROJECT}/locations/us-central1/services/osrs-finance-hub"
+sa_res() { echo "//iam.googleapis.com/projects/${PROJECT}/serviceAccounts/$1"; }
 # Looked up at run time so the billing account ID stays out of the repo.
 # Empty if billing is unlinked (killswitch); those checks then report ERROR.
 BILLING_RES="//cloudbilling.googleapis.com/$(gcloud billing projects describe "$PROJECT" \
@@ -90,8 +94,13 @@ check ALLOW "$PLAN" pubsub.topics.get "$PROJECT_RES"
 check DENY  "$PLAN" pubsub.topics.publish "$PROJECT_RES"
 check DENY  "$PLAN" pubsub.subscriptions.consume "$PROJECT_RES"
 check DENY  "$PLAN" billing.budgets.get "$BILLING_RES"
+check ALLOW "$PLAN" artifactregistry.repositories.get "$PROJECT_RES"
+check DENY  "$PLAN" artifactregistry.repositories.uploadArtifacts "$PROJECT_RES"
+check DENY  "$PLAN" artifactregistry.repositories.create "$PROJECT_RES"
+check ALLOW "$PLAN" run.services.get "$RUN_RES"
+check DENY  "$PLAN" run.services.update "$RUN_RES"
 
-echo "== deployer-sa: prod state and bucket settings only"
+echo "== deployer-sa: prod state and bucket settings"
 check ALLOW "$DEPLOYER" resourcemanager.projects.get "$PROJECT_RES"
 check ALLOW "$DEPLOYER" storage.objects.get "$BUCKET_RES"
 check ALLOW "$DEPLOYER" storage.buckets.update "$BUCKET_RES"
@@ -108,6 +117,27 @@ check DENY  "$DEPLOYER" bigquery.datasets.update "$PROJECT_RES"
 check ALLOW "$DEPLOYER" pubsub.topics.get "$PROJECT_RES"
 check DENY  "$DEPLOYER" pubsub.topics.publish "$PROJECT_RES"
 check DENY  "$DEPLOYER" billing.budgets.update "$BILLING_RES"
+check ALLOW "$DEPLOYER" artifactregistry.repositories.get "$PROJECT_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.create "$PROJECT_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.setIamPolicy "$PROJECT_RES"
+
+echo "== deployer-sa: ship the app (push to one repo, deploy as runtime-sa, no IAM)"
+check ALLOW "$DEPLOYER" artifactregistry.repositories.uploadArtifacts "$REPO_RES"
+check ALLOW "$DEPLOYER" artifactregistry.tags.update "$REPO_RES"
+check DENY  "$DEPLOYER" artifactregistry.versions.delete "$REPO_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.setIamPolicy "$REPO_RES"
+check DENY  "$DEPLOYER" artifactregistry.repositories.uploadArtifacts "$PROJECT_RES"
+check ALLOW "$DEPLOYER" run.services.update "$RUN_RES"
+check ALLOW "$DEPLOYER" run.services.get "$RUN_RES"
+check DENY  "$DEPLOYER" run.services.setIamPolicy "$RUN_RES"
+check DENY  "$DEPLOYER" run.services.create "$PROJECT_RES"
+check DENY  "$DEPLOYER" run.jobs.run "$PROJECT_RES"
+check DENY  "$DEPLOYER" run.services.setIamPolicy "$PROJECT_RES"
+check ALLOW "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$RUNTIME")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$KILLSWITCH")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$PLAN")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.actAs "$(sa_res "$DEPLOYER")"
+check DENY  "$DEPLOYER" iam.serviceAccounts.setIamPolicy "$(sa_res "$RUNTIME")"
 
 echo "== killswitch-sa: read and unlink billing only"
 check ALLOW "$KILLSWITCH" resourcemanager.projects.deleteBillingAssignment "$PROJECT_RES"
@@ -118,6 +148,73 @@ check DENY  "$KILLSWITCH" pubsub.topics.get "$PROJECT_RES"
 check DENY  "$KILLSWITCH" resourcemanager.projects.setIamPolicy "$PROJECT_RES"
 check DENY  "$KILLSWITCH" storage.objects.get "$BUCKET_RES"
 check DENY  "$KILLSWITCH" storage.buckets.update "$BUCKET_RES"
+
+echo "== runtime-sa: no roles yet (E3 adds BigQuery read)"
+check DENY  "$RUNTIME" resourcemanager.projects.get "$PROJECT_RES"
+check DENY  "$RUNTIME" storage.objects.get "$BUCKET_RES"
+check DENY  "$RUNTIME" artifactregistry.repositories.uploadArtifacts "$PROJECT_RES"
+check DENY  "$RUNTIME" run.services.update "$PROJECT_RES"
+check DENY  "$RUNTIME" bigquery.tables.getData "$PROJECT_RES"
+check DENY  "$RUNTIME" iam.serviceAccounts.actAs "$PROJECT_RES"
+
+echo "== App access: IAP (and the deployer) may invoke the service (OSRS-29)"
+PROJECT_NUMBER=$(gcloud projects describe "$PROJECT" --format='value(projectNumber)')
+IAP_AGENT="service-${PROJECT_NUMBER}@gcp-sa-iap.iam.gserviceaccount.com"
+check ALLOW "$IAP_AGENT" run.routes.invoke "$RUN_RES"
+# ALLOW by Joe's decision (OSRS-29): run.developer (OSRS-28) includes
+# run.routes.invoke, and no built-in deploy role leaves it out. Harmless while
+# IAP is on: all traffic passes IAP before this IAM check, and deployer-sa has
+# no IAP grant (a CI smoke test would need one, OSRS-30). Removing it would
+# take a custom copy of run.developer.
+check ALLOW "$DEPLOYER" run.routes.invoke "$RUN_RES"
+check DENY  "$PLAN" run.routes.invoke "$RUN_RES"
+check DENY  "$RUNTIME" run.routes.invoke "$RUN_RES"
+
+# Troubleshooter takes one principal at a time, so it cannot rule out the
+# public members. Read both policies and look for them directly.
+public_members() {  # prints any allUsers / allAuthenticatedUsers in a policy (JSON on stdin)
+  python3 -c '
+import json, sys
+public = {"allUsers", "allAuthenticatedUsers"}
+for b in json.loads(sys.stdin.read() or "{}").get("bindings", []):
+    for m in public.intersection(b["members"]):
+        print(b["role"] + "|" + m)
+'
+}
+get_policy() {  # get_policy <run|iap>: the service's Cloud Run or IAP allow policy as JSON
+  if [[ "$1" == run ]]; then
+    gcloud run services get-iam-policy osrs-finance-hub --project="$PROJECT" \
+      --region=us-central1 --format=json --verbosity=error 2>&1
+  else
+    gcloud iap web get-iam-policy --project="$PROJECT" --resource-type=cloud-run \
+      --service=osrs-finance-hub --region=us-central1 --format=json --verbosity=error 2>&1
+  fi
+}
+for kind in run iap; do
+  if ! policy=$(get_policy "$kind"); then
+    report FAIL "$kind-policy" "read IAM policy" osrs-finance-hub ok "${policy##*ERROR: }"
+  # Unparseable output (e.g. a gcloud notice mixed into the JSON) must FAIL,
+  # never read as "no public members".
+  elif ! found=$(public_members <<<"$policy" 2>&1); then
+    report FAIL "$kind-policy" "parse IAM policy" osrs-finance-hub ok "${found##*$'\n'}"
+  elif [[ -z "$found" ]]; then
+    report PASS "$kind-policy" "no allUsers / allAuthenticatedUsers" osrs-finance-hub none none
+  else
+    report FAIL "$kind-policy" "no allUsers / allAuthenticatedUsers" osrs-finance-hub none "$found"
+  fi
+done
+
+# The custom OAuth client was made in the console (ADR 0006), so Terraform
+# can't see it. Without it IAP falls back to the Google-managed client, which
+# refuses Gmail accounts. Reads only the client ID; the secret is never shown.
+if ! settings=$(gcloud iap settings get --project="$PROJECT" --resource-type=cloud-run \
+    --service=osrs-finance-hub --region=us-central1 --format=json --verbosity=error 2>&1); then
+  report FAIL iap-client "read IAP settings" osrs-finance-hub ok "${settings##*ERROR: }"
+elif python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin).get("accessSettings",{}).get("oauthSettings",{}).get("clientId") else 1)' <<<"$settings" 2>/dev/null; then
+  report PASS iap-client "custom OAuth client set" osrs-finance-hub set set
+else
+  report FAIL iap-client "custom OAuth client set" osrs-finance-hub set "none (or unparseable)"
+fi
 
 # Throwaway project for the live killswitch test (OSRS-18). Skipped unless the
 # project exists, so this script passes between tests. Must match
@@ -167,7 +264,7 @@ for proj in "$PROJECT" osrs-llm; do
   mark=PASS; [[ "$enforced" == True ]] || mark=FAIL
   report "$mark" org-policy "disableServiceAccountKeyCreation enforced" "$proj" True "$enforced"
 done
-for sa in "$PLAN" "$DEPLOYER" "$KILLSWITCH"; do
+for sa in "$PLAN" "$DEPLOYER" "$KILLSWITCH" "$RUNTIME"; do
   keys=$(gcloud iam service-accounts keys list --iam-account="$sa" \
     --managed-by=user --format='value(name)' 2>&1 | grep -c . || true)
   mark=PASS; [[ "$keys" == 0 ]] || mark=FAIL
@@ -204,6 +301,8 @@ print(" ".join(members) or "none")
 wif_check "$PLAN" "${SET}/attribute.event_name/pull_request"
 wif_check "$DEPLOYER" "${SET}/attribute.env_on_master/production"
 wif_check "$KILLSWITCH" "${SET}/attribute.env_on_master/killswitch"
+# No GitHub run may act as the runtime account; only Cloud Run uses it.
+wif_check "$RUNTIME" "none"
 
 echo
 echo "Note: ALLOW verdicts cover allow policies; deny policies were not readable (none exist)."

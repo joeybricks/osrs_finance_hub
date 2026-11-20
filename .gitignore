@@ -35,6 +35,11 @@ secrets/
 !*.tfvars.example
 crash.log
 crash.*.log
+# Saved plans hold every attribute value in clear text, sensitive ones too.
+tfplan
+*.tfplan
+plan.json
+infracost.json
 
 # Session notes
 work_so_far/*

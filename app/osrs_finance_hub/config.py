@@ -25,7 +25,8 @@ class Settings:
     # reach you if the app misbehaves. An email or Discord handle is fine.
     contact: str = ""
 
-    # How often (seconds) to refresh each endpoint.
+    # Time to live (seconds) for each endpoint. The cache refetches lazily,
+    # on the first /api request after this has passed.
     latest_refresh_seconds: int = 60       # /latest
     hourly_refresh_seconds: int = 300      # /1h and /5m
     timeseries_cache_seconds: int = 60     # per item+timestep, fetched on demand
@@ -80,7 +81,9 @@ class Settings:
                         Path.home() / ".osrs_finance_hub" / "positions.json")
             ).expanduser(),
             host=env.get("OSRS_FINANCE_HUB_HOST", "127.0.0.1"),
-            port=int(env.get("OSRS_FINANCE_HUB_PORT", 8080)),
+            # PORT is what Cloud Run (and most container hosts) set. Our own
+            # variable wins so a stray PORT on a laptop can't override it.
+            port=int(env.get("OSRS_FINANCE_HUB_PORT") or env.get("PORT") or 8080),
             open_browser=env.get("OSRS_FINANCE_HUB_OPEN_BROWSER", "1") not in ("0", "false", "no"),
         )
 

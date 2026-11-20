@@ -1,0 +1,1337 @@
+{
+ "data": {
+  "10": {
+   "avgHighPrice": 176286,
+   "avgLowPrice": 170178,
+   "highPriceVolume": 7,
+   "lowPriceVolume": 15
+  },
+  "10376": {
+   "avgHighPrice": 5971,
+   "avgLowPrice": null,
+   "highPriceVolume": 4,
+   "lowPriceVolume": 0
+  },
+  "10378": {
+   "avgHighPrice": 71889,
+   "avgLowPrice": 56864,
+   "highPriceVolume": 7,
+   "lowPriceVolume": 4
+  },
+  "10380": {
+   "avgHighPrice": 105246,
+   "avgLowPrice": 87748,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 5
+  },
+  "10382": {
+   "avgHighPrice": 22929,
+   "avgLowPrice": 17745,
+   "highPriceVolume": 11,
+   "lowPriceVolume": 3
+  },
+  "1065": {
+   "avgHighPrice": 1103,
+   "avgLowPrice": 696,
+   "highPriceVolume": 226,
+   "lowPriceVolume": 329
+  },
+  "1075": {
+   "avgHighPrice": 209,
+   "avgLowPrice": 179,
+   "highPriceVolume": 4,
+   "lowPriceVolume": 2
+  },
+  "1087": {
+   "avgHighPrice": null,
+   "avgLowPrice": 153,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 7
+  },
+  "1099": {
+   "avgHighPrice": 2192,
+   "avgLowPrice": 2074,
+   "highPriceVolume": 179,
+   "lowPriceVolume": 242
+  },
+  "11072": {
+   "avgHighPrice": null,
+   "avgLowPrice": 466,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 35
+  },
+  "11074": {
+   "avgHighPrice": null,
+   "avgLowPrice": 385,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "11076": {
+   "avgHighPrice": null,
+   "avgLowPrice": 597,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1665
+  },
+  "11079": {
+   "avgHighPrice": 862,
+   "avgLowPrice": 806,
+   "highPriceVolume": 2,
+   "lowPriceVolume": 4
+  },
+  "11085": {
+   "avgHighPrice": 969,
+   "avgLowPrice": 933,
+   "highPriceVolume": 1001,
+   "lowPriceVolume": 3584
+  },
+  "11088": {
+   "avgHighPrice": 1522,
+   "avgLowPrice": null,
+   "highPriceVolume": 16,
+   "lowPriceVolume": 0
+  },
+  "11090": {
+   "avgHighPrice": 2001,
+   "avgLowPrice": 1916,
+   "highPriceVolume": 4154,
+   "lowPriceVolume": 2920
+  },
+  "11092": {
+   "avgHighPrice": 1819,
+   "avgLowPrice": 1751,
+   "highPriceVolume": 614,
+   "lowPriceVolume": 2002
+  },
+  "11095": {
+   "avgHighPrice": 2357,
+   "avgLowPrice": 1877,
+   "highPriceVolume": 30,
+   "lowPriceVolume": 1431
+  },
+  "11113": {
+   "avgHighPrice": 11839,
+   "avgLowPrice": 11833,
+   "highPriceVolume": 16,
+   "lowPriceVolume": 328
+  },
+  "11115": {
+   "avgHighPrice": 11274,
+   "avgLowPrice": 11217,
+   "highPriceVolume": 3273,
+   "lowPriceVolume": 206
+  },
+  "11126": {
+   "avgHighPrice": 11982,
+   "avgLowPrice": 11959,
+   "highPriceVolume": 1471,
+   "lowPriceVolume": 5945
+  },
+  "11128": {
+   "avgHighPrice": 2096908,
+   "avgLowPrice": 2044656,
+   "highPriceVolume": 9,
+   "lowPriceVolume": 7
+  },
+  "11133": {
+   "avgHighPrice": 1955144,
+   "avgLowPrice": 1904363,
+   "highPriceVolume": 17,
+   "lowPriceVolume": 11
+  },
+  "1117": {
+   "avgHighPrice": 80,
+   "avgLowPrice": 80,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 667
+  },
+  "1135": {
+   "avgHighPrice": 4287,
+   "avgLowPrice": 4277,
+   "highPriceVolume": 777,
+   "lowPriceVolume": 3660
+  },
+  "1155": {
+   "avgHighPrice": 175,
+   "avgLowPrice": 133,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 134
+  },
+  "11785": {
+   "avgHighPrice": 31484649,
+   "avgLowPrice": 30887792,
+   "highPriceVolume": 13,
+   "lowPriceVolume": 13
+  },
+  "11832": {
+   "avgHighPrice": 17126252,
+   "avgLowPrice": 16896019,
+   "highPriceVolume": 21,
+   "lowPriceVolume": 22
+  },
+  "1189": {
+   "avgHighPrice": 184,
+   "avgLowPrice": 175,
+   "highPriceVolume": 9,
+   "lowPriceVolume": 71
+  },
+  "12": {
+   "avgHighPrice": 200675,
+   "avgLowPrice": 194756,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 14
+  },
+  "12207": {
+   "avgHighPrice": null,
+   "avgLowPrice": 2565,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "12209": {
+   "avgHighPrice": null,
+   "avgLowPrice": 2555,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 2
+  },
+  "12215": {
+   "avgHighPrice": null,
+   "avgLowPrice": 6093,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 2
+  },
+  "12217": {
+   "avgHighPrice": null,
+   "avgLowPrice": 3500,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 2
+  },
+  "12221": {
+   "avgHighPrice": null,
+   "avgLowPrice": 8278,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "12223": {
+   "avgHighPrice": null,
+   "avgLowPrice": 7540,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "12426": {
+   "avgHighPrice": 777777777,
+   "avgLowPrice": null,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 0
+  },
+  "12817": {
+   "avgHighPrice": 383483641,
+   "avgLowPrice": 378735708,
+   "highPriceVolume": 5,
+   "lowPriceVolume": 6
+  },
+  "12863": {
+   "avgHighPrice": 768459,
+   "avgLowPrice": 749343,
+   "highPriceVolume": 19,
+   "lowPriceVolume": 14
+  },
+  "12865": {
+   "avgHighPrice": 8116,
+   "avgLowPrice": 7930,
+   "highPriceVolume": 8,
+   "lowPriceVolume": 1
+  },
+  "12881": {
+   "avgHighPrice": 2255712,
+   "avgLowPrice": 2194492,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 3
+  },
+  "12934": {
+   "avgHighPrice": 129,
+   "avgLowPrice": 126,
+   "highPriceVolume": 675253,
+   "lowPriceVolume": 432123
+  },
+  "12960": {
+   "avgHighPrice": 398,
+   "avgLowPrice": 394,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 8
+  },
+  "12964": {
+   "avgHighPrice": 32063,
+   "avgLowPrice": null,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 0
+  },
+  "12968": {
+   "avgHighPrice": null,
+   "avgLowPrice": 79000,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "13153": {
+   "avgHighPrice": 5724,
+   "avgLowPrice": null,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 0
+  },
+  "13165": {
+   "avgHighPrice": 256600,
+   "avgLowPrice": null,
+   "highPriceVolume": 3,
+   "lowPriceVolume": 0
+  },
+  "13190": {
+   "avgHighPrice": 10859601,
+   "avgLowPrice": 10551971,
+   "highPriceVolume": 329,
+   "lowPriceVolume": 238
+  },
+  "13237": {
+   "avgHighPrice": 32399551,
+   "avgLowPrice": 31794462,
+   "highPriceVolume": 13,
+   "lowPriceVolume": 13
+  },
+  "13239": {
+   "avgHighPrice": 15466744,
+   "avgLowPrice": 15240119,
+   "highPriceVolume": 23,
+   "lowPriceVolume": 22
+  },
+  "13652": {
+   "avgHighPrice": 29433807,
+   "avgLowPrice": 28834400,
+   "highPriceVolume": 19,
+   "lowPriceVolume": 22
+  },
+  "1517": {
+   "avgHighPrice": 7,
+   "avgLowPrice": 6,
+   "highPriceVolume": 535961,
+   "lowPriceVolume": 244985
+  },
+  "1637": {
+   "avgHighPrice": 498,
+   "avgLowPrice": 482,
+   "highPriceVolume": 30991,
+   "lowPriceVolume": 33278
+  },
+  "1639": {
+   "avgHighPrice": 555,
+   "avgLowPrice": 519,
+   "highPriceVolume": 9495,
+   "lowPriceVolume": 8920
+  },
+  "1641": {
+   "avgHighPrice": 947,
+   "avgLowPrice": 917,
+   "highPriceVolume": 4418,
+   "lowPriceVolume": 1450
+  },
+  "1643": {
+   "avgHighPrice": 1837,
+   "avgLowPrice": 1800,
+   "highPriceVolume": 716,
+   "lowPriceVolume": 1109
+  },
+  "1645": {
+   "avgHighPrice": 10398,
+   "avgLowPrice": 10202,
+   "highPriceVolume": 3,
+   "lowPriceVolume": 546
+  },
+  "1656": {
+   "avgHighPrice": 406,
+   "avgLowPrice": 385,
+   "highPriceVolume": 12730,
+   "lowPriceVolume": 23966
+  },
+  "1658": {
+   "avgHighPrice": 544,
+   "avgLowPrice": 526,
+   "highPriceVolume": 25346,
+   "lowPriceVolume": 36385
+  },
+  "1662": {
+   "avgHighPrice": 1870,
+   "avgLowPrice": 1829,
+   "highPriceVolume": 14265,
+   "lowPriceVolume": 26405
+  },
+  "1664": {
+   "avgHighPrice": 11170,
+   "avgLowPrice": 10812,
+   "highPriceVolume": 251,
+   "lowPriceVolume": 761
+  },
+  "1694": {
+   "avgHighPrice": 430,
+   "avgLowPrice": 424,
+   "highPriceVolume": 915,
+   "lowPriceVolume": 11
+  },
+  "1696": {
+   "avgHighPrice": 693,
+   "avgLowPrice": 676,
+   "highPriceVolume": 2019,
+   "lowPriceVolume": 48
+  },
+  "1698": {
+   "avgHighPrice": 1107,
+   "avgLowPrice": 1096,
+   "highPriceVolume": 1712,
+   "lowPriceVolume": 374
+  },
+  "1700": {
+   "avgHighPrice": 1998,
+   "avgLowPrice": 1952,
+   "highPriceVolume": 1055,
+   "lowPriceVolume": 1345
+  },
+  "1702": {
+   "avgHighPrice": 10485,
+   "avgLowPrice": 10270,
+   "highPriceVolume": 69,
+   "lowPriceVolume": 65
+  },
+  "1704": {
+   "avgHighPrice": 11202,
+   "avgLowPrice": 11074,
+   "highPriceVolume": 1062,
+   "lowPriceVolume": 2543
+  },
+  "1725": {
+   "avgHighPrice": 1352,
+   "avgLowPrice": 1350,
+   "highPriceVolume": 391,
+   "lowPriceVolume": 2728
+  },
+  "1727": {
+   "avgHighPrice": 479,
+   "avgLowPrice": 407,
+   "highPriceVolume": 41,
+   "lowPriceVolume": 37
+  },
+  "1729": {
+   "avgHighPrice": 919,
+   "avgLowPrice": 893,
+   "highPriceVolume": 95,
+   "lowPriceVolume": 1426
+  },
+  "1731": {
+   "avgHighPrice": 2351,
+   "avgLowPrice": 2350,
+   "highPriceVolume": 770,
+   "lowPriceVolume": 3366
+  },
+  "19544": {
+   "avgHighPrice": 14391794,
+   "avgLowPrice": 14074481,
+   "highPriceVolume": 14,
+   "lowPriceVolume": 13
+  },
+  "19547": {
+   "avgHighPrice": 14377164,
+   "avgLowPrice": 14078749,
+   "highPriceVolume": 29,
+   "lowPriceVolume": 30
+  },
+  "19550": {
+   "avgHighPrice": 14546187,
+   "avgLowPrice": 14186808,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 11
+  },
+  "19553": {
+   "avgHighPrice": 14427581,
+   "avgLowPrice": 14118360,
+   "highPriceVolume": 18,
+   "lowPriceVolume": 28
+  },
+  "2": {
+   "avgHighPrice": 214,
+   "avgLowPrice": 208,
+   "highPriceVolume": 633498,
+   "lowPriceVolume": 589632
+  },
+  "20074": {
+   "avgHighPrice": 5252479,
+   "avgLowPrice": 4926764,
+   "highPriceVolume": 3,
+   "lowPriceVolume": 6
+  },
+  "20997": {
+   "avgHighPrice": 1423959279,
+   "avgLowPrice": 1418556504,
+   "highPriceVolume": 7,
+   "lowPriceVolume": 3
+  },
+  "21000": {
+   "avgHighPrice": 9399281,
+   "avgLowPrice": 9183588,
+   "highPriceVolume": 20,
+   "lowPriceVolume": 18
+  },
+  "21018": {
+   "avgHighPrice": 33161345,
+   "avgLowPrice": 32944292,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 7
+  },
+  "21021": {
+   "avgHighPrice": 88092419,
+   "avgLowPrice": 85730563,
+   "highPriceVolume": 7,
+   "lowPriceVolume": 7
+  },
+  "21081": {
+   "avgHighPrice": null,
+   "avgLowPrice": 750,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 361
+  },
+  "21087": {
+   "avgHighPrice": null,
+   "avgLowPrice": 1240,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 6
+  },
+  "21090": {
+   "avgHighPrice": 683,
+   "avgLowPrice": null,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 0
+  },
+  "21111": {
+   "avgHighPrice": 1199,
+   "avgLowPrice": null,
+   "highPriceVolume": 2275,
+   "lowPriceVolume": 0
+  },
+  "21114": {
+   "avgHighPrice": 1380,
+   "avgLowPrice": 1269,
+   "highPriceVolume": 575,
+   "lowPriceVolume": 99
+  },
+  "21117": {
+   "avgHighPrice": null,
+   "avgLowPrice": 626,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 50
+  },
+  "21123": {
+   "avgHighPrice": 1422,
+   "avgLowPrice": 1464,
+   "highPriceVolume": 4,
+   "lowPriceVolume": 182
+  },
+  "21126": {
+   "avgHighPrice": 1529,
+   "avgLowPrice": 1414,
+   "highPriceVolume": 644,
+   "lowPriceVolume": 61
+  },
+  "21129": {
+   "avgHighPrice": 773,
+   "avgLowPrice": 100,
+   "highPriceVolume": 150,
+   "lowPriceVolume": 1
+  },
+  "21140": {
+   "avgHighPrice": 1596,
+   "avgLowPrice": 1552,
+   "highPriceVolume": 197,
+   "lowPriceVolume": 13
+  },
+  "21143": {
+   "avgHighPrice": 1289,
+   "avgLowPrice": 1244,
+   "highPriceVolume": 1182,
+   "lowPriceVolume": 7436
+  },
+  "21146": {
+   "avgHighPrice": 1272,
+   "avgLowPrice": 1148,
+   "highPriceVolume": 386,
+   "lowPriceVolume": 1113
+  },
+  "21157": {
+   "avgHighPrice": null,
+   "avgLowPrice": 455,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "21160": {
+   "avgHighPrice": 798,
+   "avgLowPrice": null,
+   "highPriceVolume": 21,
+   "lowPriceVolume": 0
+  },
+  "21163": {
+   "avgHighPrice": 1704,
+   "avgLowPrice": 1657,
+   "highPriceVolume": 1439,
+   "lowPriceVolume": 2462
+  },
+  "21166": {
+   "avgHighPrice": 1798,
+   "avgLowPrice": 1700,
+   "highPriceVolume": 810,
+   "lowPriceVolume": 37
+  },
+  "21177": {
+   "avgHighPrice": 1335,
+   "avgLowPrice": 1142,
+   "highPriceVolume": 142,
+   "lowPriceVolume": 1026
+  },
+  "21180": {
+   "avgHighPrice": 673,
+   "avgLowPrice": 669,
+   "highPriceVolume": 7,
+   "lowPriceVolume": 3
+  },
+  "21183": {
+   "avgHighPrice": 1822,
+   "avgLowPrice": 1762,
+   "highPriceVolume": 544,
+   "lowPriceVolume": 1566
+  },
+  "21820": {
+   "avgHighPrice": 173,
+   "avgLowPrice": 169,
+   "highPriceVolume": 897811,
+   "lowPriceVolume": 877373
+  },
+  "21880": {
+   "avgHighPrice": 320,
+   "avgLowPrice": 313,
+   "highPriceVolume": 400901,
+   "lowPriceVolume": 85314
+  },
+  "21932": {
+   "avgHighPrice": 2773,
+   "avgLowPrice": 2709,
+   "highPriceVolume": 3570,
+   "lowPriceVolume": 1064
+  },
+  "21940": {
+   "avgHighPrice": 2808,
+   "avgLowPrice": 2698,
+   "highPriceVolume": 4135,
+   "lowPriceVolume": 2555
+  },
+  "21942": {
+   "avgHighPrice": 1557,
+   "avgLowPrice": null,
+   "highPriceVolume": 19,
+   "lowPriceVolume": 0
+  },
+  "21944": {
+   "avgHighPrice": 2888,
+   "avgLowPrice": 2844,
+   "highPriceVolume": 59107,
+   "lowPriceVolume": 21057
+  },
+  "21946": {
+   "avgHighPrice": 2712,
+   "avgLowPrice": 2630,
+   "highPriceVolume": 12334,
+   "lowPriceVolume": 11721
+  },
+  "21948": {
+   "avgHighPrice": 1913,
+   "avgLowPrice": 1836,
+   "highPriceVolume": 1410,
+   "lowPriceVolume": 660
+  },
+  "21950": {
+   "avgHighPrice": 9008,
+   "avgLowPrice": null,
+   "highPriceVolume": 2200,
+   "lowPriceVolume": 0
+  },
+  "21955": {
+   "avgHighPrice": null,
+   "avgLowPrice": 2610,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 126
+  },
+  "21963": {
+   "avgHighPrice": null,
+   "avgLowPrice": 2563,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1685
+  },
+  "21967": {
+   "avgHighPrice": 2755,
+   "avgLowPrice": 2750,
+   "highPriceVolume": 14400,
+   "lowPriceVolume": 4200
+  },
+  "21969": {
+   "avgHighPrice": 2727,
+   "avgLowPrice": 2746,
+   "highPriceVolume": 350,
+   "lowPriceVolume": 221
+  },
+  "22486": {
+   "avgHighPrice": 1021533304,
+   "avgLowPrice": 1015582736,
+   "highPriceVolume": 8,
+   "lowPriceVolume": 5
+  },
+  "23113": {
+   "avgHighPrice": 144342,
+   "avgLowPrice": 139961,
+   "highPriceVolume": 29,
+   "lowPriceVolume": 3
+  },
+  "23342": {
+   "avgHighPrice": null,
+   "avgLowPrice": 385010000,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "2357": {
+   "avgHighPrice": 70,
+   "avgLowPrice": 66,
+   "highPriceVolume": 284485,
+   "lowPriceVolume": 177825
+  },
+  "23956": {
+   "avgHighPrice": 4949317,
+   "avgLowPrice": 4842102,
+   "highPriceVolume": 45,
+   "lowPriceVolume": 92
+  },
+  "23959": {
+   "avgHighPrice": 2820162,
+   "avgLowPrice": 2801467,
+   "highPriceVolume": 90,
+   "lowPriceVolume": 135
+  },
+  "24268": {
+   "avgHighPrice": 10302139,
+   "avgLowPrice": 10110379,
+   "highPriceVolume": 16,
+   "lowPriceVolume": 18
+  },
+  "24411": {
+   "avgHighPrice": 20635,
+   "avgLowPrice": 7000,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 1
+  },
+  "24422": {
+   "avgHighPrice": 17944536,
+   "avgLowPrice": 17563429,
+   "highPriceVolume": 17,
+   "lowPriceVolume": 12
+  },
+  "24488": {
+   "avgHighPrice": 408000000,
+   "avgLowPrice": 405810155,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 2
+  },
+  "24511": {
+   "avgHighPrice": 301999911,
+   "avgLowPrice": 300061224,
+   "highPriceVolume": 5,
+   "lowPriceVolume": 4
+  },
+  "2550": {
+   "avgHighPrice": 1416,
+   "avgLowPrice": 1400,
+   "highPriceVolume": 51839,
+   "lowPriceVolume": 27534
+  },
+  "2552": {
+   "avgHighPrice": 824,
+   "avgLowPrice": 811,
+   "highPriceVolume": 3106,
+   "lowPriceVolume": 1867
+  },
+  "2568": {
+   "avgHighPrice": 1012,
+   "avgLowPrice": 950,
+   "highPriceVolume": 94,
+   "lowPriceVolume": 388
+  },
+  "2570": {
+   "avgHighPrice": 1726,
+   "avgLowPrice": 1608,
+   "highPriceVolume": 9,
+   "lowPriceVolume": 467
+  },
+  "2572": {
+   "avgHighPrice": 11002,
+   "avgLowPrice": 11003,
+   "highPriceVolume": 427,
+   "lowPriceVolume": 2418
+  },
+  "26235": {
+   "avgHighPrice": 86591131,
+   "avgLowPrice": 84306003,
+   "highPriceVolume": 7,
+   "lowPriceVolume": 9
+  },
+  "26374": {
+   "avgHighPrice": 346931725,
+   "avgLowPrice": 342702597,
+   "highPriceVolume": 9,
+   "lowPriceVolume": 5
+  },
+  "2669": {
+   "avgHighPrice": 73888,
+   "avgLowPrice": 69684,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 3
+  },
+  "2671": {
+   "avgHighPrice": 45000,
+   "avgLowPrice": null,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 0
+  },
+  "2673": {
+   "avgHighPrice": null,
+   "avgLowPrice": 21137,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "2675": {
+   "avgHighPrice": null,
+   "avgLowPrice": 45500,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "27277": {
+   "avgHighPrice": 687937995,
+   "avgLowPrice": 683810277,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 10
+  },
+  "27616": {
+   "avgHighPrice": 14,
+   "avgLowPrice": 13,
+   "highPriceVolume": 2057041,
+   "lowPriceVolume": 1572626
+  },
+  "28338": {
+   "avgHighPrice": 297939700,
+   "avgLowPrice": 293388953,
+   "highPriceVolume": 8,
+   "lowPriceVolume": 9
+  },
+  "28924": {
+   "avgHighPrice": 314,
+   "avgLowPrice": 314,
+   "highPriceVolume": 483350,
+   "lowPriceVolume": 329356
+  },
+  "28997": {
+   "avgHighPrice": 3130409,
+   "avgLowPrice": 3069250,
+   "highPriceVolume": 8,
+   "lowPriceVolume": 14
+  },
+  "29022": {
+   "avgHighPrice": 2607180,
+   "avgLowPrice": 2555741,
+   "highPriceVolume": 9,
+   "lowPriceVolume": 10
+  },
+  "29025": {
+   "avgHighPrice": 6397731,
+   "avgLowPrice": 6296696,
+   "highPriceVolume": 7,
+   "lowPriceVolume": 11
+  },
+  "29028": {
+   "avgHighPrice": 802833,
+   "avgLowPrice": 775627,
+   "highPriceVolume": 5,
+   "lowPriceVolume": 7
+  },
+  "30634": {
+   "avgHighPrice": 6470706,
+   "avgLowPrice": 6375918,
+   "highPriceVolume": 19,
+   "lowPriceVolume": 18
+  },
+  "30753": {
+   "avgHighPrice": 67882168,
+   "avgLowPrice": 66741727,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 7
+  },
+  "31088": {
+   "avgHighPrice": 144902028,
+   "avgLowPrice": 142381014,
+   "highPriceVolume": 12,
+   "lowPriceVolume": 9
+  },
+  "31111": {
+   "avgHighPrice": 260,
+   "avgLowPrice": 254,
+   "highPriceVolume": 282583,
+   "lowPriceVolume": 389311
+  },
+  "31115": {
+   "avgHighPrice": 30789187,
+   "avgLowPrice": 30261073,
+   "highPriceVolume": 18,
+   "lowPriceVolume": 22
+  },
+  "31136": {
+   "avgHighPrice": 13145746,
+   "avgLowPrice": 12713297,
+   "highPriceVolume": 9,
+   "lowPriceVolume": 8
+  },
+  "31145": {
+   "avgHighPrice": 404718742,
+   "avgLowPrice": 400903208,
+   "highPriceVolume": 5,
+   "lowPriceVolume": 2
+  },
+  "314": {
+   "avgHighPrice": 4,
+   "avgLowPrice": 3,
+   "highPriceVolume": 1710413,
+   "lowPriceVolume": 1430180
+  },
+  "33631": {
+   "avgHighPrice": 50358774,
+   "avgLowPrice": 49529059,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 7
+  },
+  "34681": {
+   "avgHighPrice": 258882394,
+   "avgLowPrice": 254443718,
+   "highPriceVolume": 10,
+   "lowPriceVolume": 15
+  },
+  "34690": {
+   "avgHighPrice": 356,
+   "avgLowPrice": 345,
+   "highPriceVolume": 11800,
+   "lowPriceVolume": 74545
+  },
+  "34696": {
+   "avgHighPrice": 462,
+   "avgLowPrice": 453,
+   "highPriceVolume": 139951,
+   "lowPriceVolume": 78183
+  },
+  "34702": {
+   "avgHighPrice": 8700,
+   "avgLowPrice": 8650,
+   "highPriceVolume": 251,
+   "lowPriceVolume": 51
+  },
+  "34708": {
+   "avgHighPrice": 8941,
+   "avgLowPrice": 8900,
+   "highPriceVolume": 15861,
+   "lowPriceVolume": 12133
+  },
+  "34717": {
+   "avgHighPrice": 2922962469,
+   "avgLowPrice": 2915851669,
+   "highPriceVolume": 13,
+   "lowPriceVolume": 3
+  },
+  "34727": {
+   "avgHighPrice": 25066584,
+   "avgLowPrice": 24422237,
+   "highPriceVolume": 35,
+   "lowPriceVolume": 22
+  },
+  "3835": {
+   "avgHighPrice": 683,
+   "avgLowPrice": 405,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 5
+  },
+  "3836": {
+   "avgHighPrice": 1213,
+   "avgLowPrice": 1101,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 4
+  },
+  "3837": {
+   "avgHighPrice": 264,
+   "avgLowPrice": 212,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 4
+  },
+  "3838": {
+   "avgHighPrice": 776,
+   "avgLowPrice": 491,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 5
+  },
+  "3853": {
+   "avgHighPrice": 703,
+   "avgLowPrice": 669,
+   "highPriceVolume": 944,
+   "lowPriceVolume": 341
+  },
+  "4089": {
+   "avgHighPrice": 10455,
+   "avgLowPrice": 9808,
+   "highPriceVolume": 30,
+   "lowPriceVolume": 50
+  },
+  "4091": {
+   "avgHighPrice": 71227,
+   "avgLowPrice": 70959,
+   "highPriceVolume": 23,
+   "lowPriceVolume": 503
+  },
+  "4093": {
+   "avgHighPrice": 47226,
+   "avgLowPrice": 47018,
+   "highPriceVolume": 122,
+   "lowPriceVolume": 447
+  },
+  "4095": {
+   "avgHighPrice": 5760,
+   "avgLowPrice": 5385,
+   "highPriceVolume": 18,
+   "lowPriceVolume": 158
+  },
+  "4097": {
+   "avgHighPrice": 5792,
+   "avgLowPrice": 5561,
+   "highPriceVolume": 39,
+   "lowPriceVolume": 107
+  },
+  "444": {
+   "avgHighPrice": 114,
+   "avgLowPrice": 111,
+   "highPriceVolume": 178165,
+   "lowPriceVolume": 479211
+  },
+  "453": {
+   "avgHighPrice": 132,
+   "avgLowPrice": 129,
+   "highPriceVolume": 527117,
+   "lowPriceVolume": 1164927
+  },
+  "4699": {
+   "avgHighPrice": 19,
+   "avgLowPrice": 19,
+   "highPriceVolume": 252251,
+   "lowPriceVolume": 527716
+  },
+  "4708": {
+   "avgHighPrice": 165747,
+   "avgLowPrice": 162187,
+   "highPriceVolume": 5,
+   "lowPriceVolume": 9
+  },
+  "4710": {
+   "avgHighPrice": 111429,
+   "avgLowPrice": 105528,
+   "highPriceVolume": 5,
+   "lowPriceVolume": 9
+  },
+  "4712": {
+   "avgHighPrice": 937746,
+   "avgLowPrice": 920163,
+   "highPriceVolume": 15,
+   "lowPriceVolume": 13
+  },
+  "4714": {
+   "avgHighPrice": 932525,
+   "avgLowPrice": 915231,
+   "highPriceVolume": 15,
+   "lowPriceVolume": 12
+  },
+  "52": {
+   "avgHighPrice": 1,
+   "avgLowPrice": null,
+   "highPriceVolume": 451780,
+   "lowPriceVolume": 0
+  },
+  "5521": {
+   "avgHighPrice": 630,
+   "avgLowPrice": 585,
+   "highPriceVolume": 461,
+   "lowPriceVolume": 1870
+  },
+  "554": {
+   "avgHighPrice": 6,
+   "avgLowPrice": 5,
+   "highPriceVolume": 1909030,
+   "lowPriceVolume": 4079597
+  },
+  "555": {
+   "avgHighPrice": 5,
+   "avgLowPrice": 4,
+   "highPriceVolume": 1950137,
+   "lowPriceVolume": 554285
+  },
+  "556": {
+   "avgHighPrice": 6,
+   "avgLowPrice": 5,
+   "highPriceVolume": 2673196,
+   "lowPriceVolume": 3508422
+  },
+  "557": {
+   "avgHighPrice": 6,
+   "avgLowPrice": 5,
+   "highPriceVolume": 655905,
+   "lowPriceVolume": 1683970
+  },
+  "5574": {
+   "avgHighPrice": 6736,
+   "avgLowPrice": 5200,
+   "highPriceVolume": 2,
+   "lowPriceVolume": 9
+  },
+  "5575": {
+   "avgHighPrice": 5403,
+   "avgLowPrice": 4850,
+   "highPriceVolume": 5,
+   "lowPriceVolume": 3
+  },
+  "5576": {
+   "avgHighPrice": 8256,
+   "avgLowPrice": 7264,
+   "highPriceVolume": 4,
+   "lowPriceVolume": 5
+  },
+  "558": {
+   "avgHighPrice": 3,
+   "avgLowPrice": 2,
+   "highPriceVolume": 848206,
+   "lowPriceVolume": 459589
+  },
+  "560": {
+   "avgHighPrice": 186,
+   "avgLowPrice": 183,
+   "highPriceVolume": 1128425,
+   "lowPriceVolume": 719906
+  },
+  "561": {
+   "avgHighPrice": 159,
+   "avgLowPrice": 157,
+   "highPriceVolume": 923623,
+   "lowPriceVolume": 371161
+  },
+  "562": {
+   "avgHighPrice": 88,
+   "avgLowPrice": 85,
+   "highPriceVolume": 1159303,
+   "lowPriceVolume": 1069338
+  },
+  "563": {
+   "avgHighPrice": 119,
+   "avgLowPrice": 117,
+   "highPriceVolume": 257728,
+   "lowPriceVolume": 339153
+  },
+  "564": {
+   "avgHighPrice": 119,
+   "avgLowPrice": 116,
+   "highPriceVolume": 379928,
+   "lowPriceVolume": 157814
+  },
+  "565": {
+   "avgHighPrice": 340,
+   "avgLowPrice": 334,
+   "highPriceVolume": 1532171,
+   "lowPriceVolume": 747643
+  },
+  "5656": {
+   "avgHighPrice": 90000,
+   "avgLowPrice": 200,
+   "highPriceVolume": 1168,
+   "lowPriceVolume": 1300
+  },
+  "566": {
+   "avgHighPrice": 301,
+   "avgLowPrice": 295,
+   "highPriceVolume": 553009,
+   "lowPriceVolume": 580772
+  },
+  "6": {
+   "avgHighPrice": 209950,
+   "avgLowPrice": 191605,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 16
+  },
+  "6131": {
+   "avgHighPrice": null,
+   "avgLowPrice": 39055,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "6133": {
+   "avgHighPrice": 5555,
+   "avgLowPrice": 5055,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 1
+  },
+  "6135": {
+   "avgHighPrice": 23542,
+   "avgLowPrice": null,
+   "highPriceVolume": 3,
+   "lowPriceVolume": 0
+  },
+  "6149": {
+   "avgHighPrice": 14250,
+   "avgLowPrice": 10555,
+   "highPriceVolume": 1,
+   "lowPriceVolume": 1
+  },
+  "6583": {
+   "avgHighPrice": null,
+   "avgLowPrice": 708000,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 1
+  },
+  "6585": {
+   "avgHighPrice": 2054515,
+   "avgLowPrice": 2010047,
+   "highPriceVolume": 62,
+   "lowPriceVolume": 43
+  },
+  "7936": {
+   "avgHighPrice": 2,
+   "avgLowPrice": 1,
+   "highPriceVolume": 1980436,
+   "lowPriceVolume": 1456080
+  },
+  "8": {
+   "avgHighPrice": 188321,
+   "avgLowPrice": 182101,
+   "highPriceVolume": 6,
+   "lowPriceVolume": 14
+  },
+  "809": {
+   "avgHighPrice": 7,
+   "avgLowPrice": 5,
+   "highPriceVolume": 195878,
+   "lowPriceVolume": 325236
+  },
+  "879": {
+   "avgHighPrice": 14,
+   "avgLowPrice": 12,
+   "highPriceVolume": 600,
+   "lowPriceVolume": 1930
+  },
+  "880": {
+   "avgHighPrice": 38,
+   "avgLowPrice": null,
+   "highPriceVolume": 8801,
+   "lowPriceVolume": 0
+  },
+  "892": {
+   "avgHighPrice": 35,
+   "avgLowPrice": 34,
+   "highPriceVolume": 389063,
+   "lowPriceVolume": 262083
+  },
+  "9075": {
+   "avgHighPrice": 127,
+   "avgLowPrice": 124,
+   "highPriceVolume": 434472,
+   "lowPriceVolume": 208755
+  },
+  "9236": {
+   "avgHighPrice": null,
+   "avgLowPrice": 11,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 924
+  },
+  "9240": {
+   "avgHighPrice": 22,
+   "avgLowPrice": 13,
+   "highPriceVolume": 5600,
+   "lowPriceVolume": 3416
+  },
+  "9241": {
+   "avgHighPrice": 15,
+   "avgLowPrice": 14,
+   "highPriceVolume": 20,
+   "lowPriceVolume": 7957
+  },
+  "9242": {
+   "avgHighPrice": 183,
+   "avgLowPrice": 174,
+   "highPriceVolume": 37828,
+   "lowPriceVolume": 30312
+  },
+  "9243": {
+   "avgHighPrice": 115,
+   "avgLowPrice": 107,
+   "highPriceVolume": 24695,
+   "lowPriceVolume": 91525
+  },
+  "9244": {
+   "avgHighPrice": 326,
+   "avgLowPrice": 316,
+   "highPriceVolume": 73826,
+   "lowPriceVolume": 69161
+  },
+  "9245": {
+   "avgHighPrice": 8469,
+   "avgLowPrice": 8408,
+   "highPriceVolume": 290,
+   "lowPriceVolume": 11108
+  },
+  "9336": {
+   "avgHighPrice": null,
+   "avgLowPrice": 206,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 6500
+  },
+  "9337": {
+   "avgHighPrice": 44,
+   "avgLowPrice": null,
+   "highPriceVolume": 300,
+   "lowPriceVolume": 0
+  },
+  "9338": {
+   "avgHighPrice": 96,
+   "avgLowPrice": null,
+   "highPriceVolume": 11000,
+   "lowPriceVolume": 0
+  },
+  "9339": {
+   "avgHighPrice": null,
+   "avgLowPrice": 226,
+   "highPriceVolume": 0,
+   "lowPriceVolume": 390
+  },
+  "9340": {
+   "avgHighPrice": 325,
+   "avgLowPrice": 320,
+   "highPriceVolume": 5600,
+   "lowPriceVolume": 33649
+  },
+  "9341": {
+   "avgHighPrice": 388,
+   "avgLowPrice": 380,
+   "highPriceVolume": 3500,
+   "lowPriceVolume": 11000
+  },
+  "9342": {
+   "avgHighPrice": 8288,
+   "avgLowPrice": 8251,
+   "highPriceVolume": 1391,
+   "lowPriceVolume": 8427
+  }
+ },
+ "timestamp": 1793970000
+}

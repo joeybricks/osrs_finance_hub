@@ -21,3 +21,14 @@ variable "org_id" {
   type        = string
   default     = "984053129458"
 }
+
+# Created in iam/ (service_accounts.tf), so referenced here by account ID.
+variable "runtime_service_account_id" {
+  description = "Account ID of the identity Cloud Run runs the app as (iam/)."
+  type        = string
+  default     = "runtime-sa"
+}
+
+locals {
+  runtime_sa_email = "${var.runtime_service_account_id}@${var.infra_project_id}.iam.gserviceaccount.com"
+}

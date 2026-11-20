@@ -12,7 +12,10 @@ Cloud Billing account
           └─ subscription budget-alerts-audit: last 24h of messages, read by hand
 ```
 At 100%, run the killswitch by hand from your phone ([killswitch.md](killswitch.md)).
-Nothing reads the topic automatically yet.
+Nothing reads the topic automatically yet. Why it is built this way, and what
+it cannot catch: [ADR 0005](../../docs/adr/0005-cost-guardrails.md).
+
+**An alert has just arrived? Go to [A budget alert fired](#a-budget-alert-fired).**
 
 **A budget alerts, it never caps.** Spend carries on past 100%. Cost data lags
 by hours, so an email can arrive after the money is spent.
@@ -84,6 +87,36 @@ when real spend crosses a threshold. The first real test is the 25% email
 Unlink by hand: Console → Billing → Account management → `osrs-infra` →
 Disable billing. This stops paid services. Terraform ignores the billing link
 (`envs/prod/projects.tf`), so the next apply won't re-link it.
+
+## A budget alert fired
+The email says how much, not what. Cost data lags by hours, so the number is
+already old; the resource is still running. Do these in order.
+
+1. **Which threshold?** The subject line says (25/50/90/100% actual, or 100%
+   forecast). Use the table above for how urgent it is. More than one email in
+   a day means spend is climbing fast: treat it as the highest one.
+2. **Is it real?** Console → Billing → Budgets & alerts → `osrs-infra monthly`
+   shows spend so far against £2. The synthetic test script never emails, so
+   an email is always real.
+3. **Which service?** Console → Billing → Reports, project `osrs-infra`,
+   group by service, this month. For line-level detail, the export query in
+   [billing-export.md](billing-export.md) (dry run first).
+4. **Is it expected?** Compare with the last merged PR's plan summary
+   (`plan.yml`: policy and Infracost sections). A service that was $0 in the
+   estimate but is billing is usage-based: look at its request or storage
+   figures. A service that is not in Terraform at all was made by hand:
+   `terraform plan` in `infra/envs/prod` will not know it.
+5. **Stop it.** At 90% or above, stop first and investigate afterwards:
+   - the killswitch from your phone ([killswitch.md](killswitch.md)), or
+   - the hand unlink above, or
+   - if you know the one resource, delete it (Terraform PR if there is time,
+     console if not) and leave billing on.
+   Below 90%, fix it through a PR today and watch the report tomorrow.
+6. **Check the rest of the billing account.** Console → Billing → Account
+   management lists every linked project. The budget only watches
+   `osrs-infra`; spend elsewhere never alerts.
+7. **Write it down** in the killswitch runbook's test log (date, threshold,
+   cause, fix), even if you did not press the button.
 
 ## Undo
 - Budget: `terraform destroy` in `infra/billing` (alerts stop).

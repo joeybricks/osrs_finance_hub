@@ -51,7 +51,7 @@ a link to its wiki page, and a price history chart over a selectable span.
 
 ## Install
 
-Requires Python 3.10 or newer and [uv](https://docs.astral.sh/uv/).
+Requires Python 3.11 or newer and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 git clone <this repo>
@@ -80,11 +80,27 @@ Useful flags:
 | `--volume-fraction` | Share of traded volume you expect to capture. Default 0.10. |
 | `--aggression` | Share of the post-tax margin conceded for a faster fill. Default 0.25. |
 | `--min-profit-per-unit` | Floor a suggestion must clear after tax. Default 1. |
-| `--latest-refresh` | Seconds between price refreshes. Default 60. |
-| `--hourly-refresh` | Seconds between volume refreshes. Default 300. |
+| `--latest-refresh` | Seconds before cached prices are refetched. Default 60. |
+| `--hourly-refresh` | Seconds before cached volumes are refetched. Default 300. |
 | `--positions-file` | Where pinned trades are kept. Default `~/.osrs_finance_hub/positions.json`. |
 | `--no-browser` | Do not open a browser tab. |
 | `--verbose` | Debug logging. |
+
+### In a container
+
+The same app runs in Docker, which is how it is deployed to Cloud Run. Use this
+to check the image before pushing; for everyday work `uv run` is quicker.
+
+```bash
+export OSRS_FINANCE_HUB_CONTACT="you@example.com"
+docker compose up --build        # http://127.0.0.1:8080/
+docker compose down
+```
+
+The image runs `osrs_finance_hub serve`, so the container and `uv run` share one
+entry point and the same settings. Inside the container it listens on `0.0.0.0`
+and on `$PORT` when set. `GET /health` answers without touching the wiki, for
+health probes. Pinned trades are not kept between container restarts.
 
 ## Configure
 
@@ -93,7 +109,7 @@ Every flag has an environment variable, which the flag overrides:
 | Variable | Default | What it controls |
 | --- | --- | --- |
 | `OSRS_FINANCE_HUB_CONTACT` | unset | Your contact string in the User-Agent |
-| `OSRS_FINANCE_HUB_PORT` | `8080` | Port |
+| `OSRS_FINANCE_HUB_PORT` | `$PORT`, else `8080` | Port. Falls back to `PORT`, which Cloud Run sets |
 | `OSRS_FINANCE_HUB_HOST` | `127.0.0.1` | Bind address |
 | `OSRS_FINANCE_HUB_VOLUME_FRACTION` | `0.10` | Share of 4h volume you expect to capture |
 | `OSRS_FINANCE_HUB_AGGRESSION` | `0.25` | Share of the post-tax margin conceded for a faster fill |
@@ -101,8 +117,8 @@ Every flag has an environment variable, which the flag overrides:
 | `OSRS_FINANCE_HUB_TREND_TIMESTEP` | `24h` | History resolution behind the safety rating |
 | `OSRS_FINANCE_HUB_TREND_BATCH_SIZE` | `25` | Most rows rated in one press of the button |
 | `OSRS_FINANCE_HUB_POSITIONS_FILE` | `~/.osrs_finance_hub/positions.json` | Where pinned trades are kept |
-| `OSRS_FINANCE_HUB_LATEST_REFRESH` | `60` | Seconds between `/latest` refreshes |
-| `OSRS_FINANCE_HUB_HOURLY_REFRESH` | `300` | Seconds between `/1h` and `/5m` refreshes |
+| `OSRS_FINANCE_HUB_LATEST_REFRESH` | `60` | Seconds before cached `/latest` is refetched |
+| `OSRS_FINANCE_HUB_HOURLY_REFRESH` | `300` | Seconds before cached `/1h` and `/5m` are refetched |
 | `OSRS_FINANCE_HUB_TIMESERIES_CACHE` | `60` | Seconds to cache one item's chart data |
 | `OSRS_FINANCE_HUB_OPEN_BROWSER` | `1` | Set to `0` to stop it opening a tab |
 
@@ -119,7 +135,8 @@ osrs-finance-hub/0.1.0 (contact: you@example.com)
 ```
 
 It runs without one and warns you on startup, but please set it. An email
-address or a Discord handle is fine.
+address, Discord handle or GitHub handle is fine. There is deliberately no
+default: anyone running a copy of this repo should identify as themselves.
 
 ### The volume fraction
 
@@ -657,13 +674,18 @@ The wiki blocks apps that misbehave, so the app is careful:
 - It only fetches the bulk endpoints. It never loops over items one request at
   a time. The one per-item endpoint, `/timeseries`, is called only when you open
   an item's detail view, and the result is cached.
-- Everything is cached in memory and refreshed on a timer in the background.
-  Loading the page, changing a filter and sorting a column all read from memory
-  and never trigger a request.
+- Everything is cached in memory. Each bulk endpoint has a time to live (60s
+  for prices, 300s for the volume windows, a day for the item list). When an
+  `/api` request finds one past its time, that endpoint is fetched once, however
+  many requests arrive together; the rest wait for the result. Changing a filter
+  and sorting a column happen in the browser and never trigger a request.
+- Nothing is fetched while nobody is using the app. This is what lets it run on
+  Cloud Run with request-based billing, where the CPU is throttled between
+  requests and a background timer would stall.
 
-At the default intervals that is 60 requests an hour for prices and 12 each for
-the two volume windows: about 84 an hour, however long you leave it open and
-however much you click around. Safety ratings and price charts add to that, but
+With a tab open (it refetches every minute) that is at most 60 requests an hour
+for prices and 12 each for the two volume windows: about 84 an hour, however
+much you click around. Safety ratings and price charts add to that, but
 only when you ask for them, and both are cached.
 
 Responses are gzipped. The scanner payload is close to 4 MB of JSON and the page
@@ -673,7 +695,9 @@ usable and not.
 
 ## When the API is down
 
-A failed refresh keeps the last good data and records the error. The app shows
+A failed refresh keeps the last good data and records the error. It is
+retried on the next request after the endpoint's time to live, or after 60
+seconds if that is shorter, never once per request. The app shows
 the stale numbers with a warning banner at the top rather than breaking. Price
 age is in the last table column, so you can always see how old the numbers are.
 
@@ -708,7 +732,7 @@ osrs_finance_hub/
   cli.py          command line entry point
   config.py       all tunable settings
   wiki_api.py     the API client, one method per endpoint
-  cache.py        in-memory store and background refresh
+  cache.py        in-memory store, refreshed lazily on request
   flips.py        the flip maths and trend analysis, pure functions, no I/O
   positions.py    live trades and their sell lots, saved to a small JSON file
   sets.py         item set arbitrage, pure functions over the per-item numbers

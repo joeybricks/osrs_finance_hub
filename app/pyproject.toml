@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=84.2.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "osrs_finance_hub"
 version = "0.1.0"
 description = "Local OSRS Grand Exchange money-making hub using the OSRS Wiki real-time prices API"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.110",
+    "fastapi>=0.163.1",
     "uvicorn>=0.27",
     "httpx>=0.26",
 ]
@@ -16,7 +16,7 @@ dependencies = [
 # PEP 735 dependency group: dev-only tools, never shipped with the package.
 # uv installs the "dev" group by default on `uv sync`.
 [dependency-groups]
-dev = ["pytest>=8", "pytest-asyncio>=0.23"]
+dev = ["pytest>=8", "pytest-asyncio>=1.4.1.post1"]
 
 [project.scripts]
 osrs_finance_hub = "osrs_finance_hub.cli:main"
