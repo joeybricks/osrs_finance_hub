@@ -20,11 +20,13 @@ resource "google_cloud_run_v2_service" "app" {
   # IAM still decide who gets in.
   ingress = "INGRESS_TRAFFIC_ALL"
 
-  # Sign-in page in front of the service, no load balancer needed. Google's
-  # Terraform example pairs this with the BETA launch stage, which opts the
-  # service into features Google still labels beta. Free.
-  iap_enabled  = true
-  launch_stage = "BETA"
+  # Sign-in page in front of the service, no load balancer needed. Free.
+  # No launch_stage: Google's example sets BETA, but the API keeps IAP on at
+  # the default GA (the console reset it to GA without turning IAP off).
+  # The sign-in client is a custom External OAuth client, made once in the
+  # console and set on this service only. Terraform can't create External
+  # clients (google_iap_client is Internal-only; ADR 0006).
+  iap_enabled = true
 
   # The service holds no data; a redeploy rebuilds it in a minute. Off so
   # `terraform destroy` works without a separate apply first.
